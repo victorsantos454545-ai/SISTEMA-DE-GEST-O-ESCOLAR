@@ -1,45 +1,72 @@
 # Ambiente virtual
 venv/
-env/
 .venv/
-
-# Variáveis de ambiente
-.env
-
-# Banco de dados
-instance/
-*.db
-*.sqlite
-*.sqlite3
+env/
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyo
 *.egg-info/
+*.egg
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Flask
+instance/
+
+# Banco de desenvolvimento
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.bak
+
+# Uploads locais
+uploads/
+
+# Exportações geradas
+exports/
+app/static/exports/
+app/static/reports/
+
+# Arquivos gerados
+generated/
 dist/
 build/
-*.egg
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
 
 # Sistema operacional
 .DS_Store
 Thumbs.db
 
-# Migrations temporárias
+# Segredos e certificados locais
+*.pem
+*.key
+*.crt
+
+# Cache
+.cache/
 migrations/versions/__pycache__/
-
-# Logs
-*.log
-
-# Pytest
-.pytest_cache/
-htmlcov/
-.coverage
