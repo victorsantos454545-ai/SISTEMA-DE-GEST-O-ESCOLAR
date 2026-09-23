@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% from 'components/stat_card.html' import render_stat_card %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Dashboard - Professor{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Painel do Professor</h2>
+        <div class="text-muted small">
+            Atualizado em: {{ now().strftime('%d/%m/%Y %H:%M') if now else 'Agora' }}
+        </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Minhas Turmas', data.stats.total_classes, 'collection-fill', 'primary') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Meus Alunos', data.stats.total_students, 'people-fill', 'success') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Próx. Avaliações', data.upcoming_assessments|length, 'calendar-check-fill', 'warning') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Aulas Hoje', data.todays_classes|length, 'clock-fill', 'info') }}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Aulas de Hoje -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm h-100 border-left-info">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Aulas de Hoje</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.todays_classes %}
+                        <div class="list-group list-group-flush">
+                            {% for sch in data.todays_classes %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ sch.start_time.strftime('%H:%M') }} - {{ sch.end_time.strftime('%H:%M') }}</h6>
+                                    <small class="text-muted">{{ sch.subject.name }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ sch.school_class.name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma aula programada para hoje.', 'cup-hot') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Próximas Avaliações -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Próximas Avaliações</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.upcoming_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Avaliação</th>
+                                        <th>Turma</th>
+                                        <th>Período</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ass in data.upcoming_assessments %}
+                                    <tr>
+                                        <td>{{ ass.date.strftime('%d/%m/%Y') }}</td>
+                                        <td><strong>{{ ass.title }}</strong><br><small class="text-muted">{{ ass.subject.name }}</small></td>
+                                        <td><span class="badge bg-secondary">{{ ass.school_class.name }}</span></td>
+                                        <td>{{ ass.period.name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma avaliação programada.', 'calendar-x') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atividades Recentes e Minhas Turmas -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Minhas Atividades Recentes</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.recent_activities %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <tbody>
+                                    {% for act in data.recent_activities %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ act.title }}</strong><br>
+                                            <small class="text-muted">{{ act.subject.name }} - {{ act.school_class.name }}</small>
+                                        </td>
+                                        <td>
+                                            {% if act.due_date %}
+                                                <small>Prazo: {{ act.due_date.strftime('%d/%m/%Y') }}</small><br>
+                                            {% endif %}
+                                            <span class="badge bg-{{ 'success' if act.status == 'publicada' else 'warning' }}">{{ act.status | capitalize }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma atividade recente encontrada.', 'journal-text') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Minhas Turmas</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.my_classes %}
+                        <div class="list-group list-group-flush">
+                            {% for cls in data.my_classes %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 fw-bold">{{ cls.name }} <span class="badge bg-secondary ms-1">{{ cls.grade }}</span></h6>
+                                    <small class="text-muted">{{ cls.shift }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary rounded-pill">{{ cls.enrolled_count }} alunos</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Você não possui turmas atribuídas no momento.', 'collection') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

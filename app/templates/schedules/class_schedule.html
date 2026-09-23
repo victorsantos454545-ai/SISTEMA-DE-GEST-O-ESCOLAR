@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Horários da Turma {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Grade de Horários - {{ school_class.name }}</h2>
+        <div>
+            <a href="{{ url_for('school_classes.detail', id=school_class.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar à Turma
+            </a>
+            {% if current_user.has_permission('schedules.create') %}
+            <a href="{{ url_for('schedules.create', class_id=school_class.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Novo Horário
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 10%;">Horário</th>
+                            {% for day in days %}
+                                <th>{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if grid %}
+                            {% for time_slot, row_days in grid.items() %}
+                            <tr>
+                                <td class="align-middle fw-bold bg-light">{{ time_slot }}</td>
+                                {% for day in days %}
+                                    <td class="align-top">
+                                        {% if row_days[day] %}
+                                            {% for sch in row_days[day] %}
+                                                <div class="card bg-white shadow-sm mb-2 border-start border-primary border-3">
+                                                    <div class="card-body p-2 text-start">
+                                                        <h6 class="mb-1 fw-bold">{{ sch.subject.name }}</h6>
+                                                        <small class="text-muted d-block"><i class="bi bi-person"></i> {{ sch.teacher.full_name }}</small>
+                                                        {% if sch.room %}
+                                                        <small class="text-muted d-block"><i class="bi bi-geo-alt"></i> Sala: {{ sch.room }}</small>
+                                                        {% endif %}
+                                                        
+                                                        {% if current_user.has_permission('schedules.edit') %}
+                                                        <div class="mt-2 text-end">
+                                                            <a href="{{ url_for('schedules.edit', id=sch.id) }}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                                                            <form action="{{ url_for('schedules.delete', id=sch.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja excluir este horário?');">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
+                                                            </form>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+                                    Nenhum horário cadastrado para esta turma.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

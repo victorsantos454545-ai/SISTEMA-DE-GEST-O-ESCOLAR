@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ announcement.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{{ url_for('announcements.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        
+        {% if current_user.has_permission('announcements.edit') %}
+        <div>
+            <a href="{{ url_for('announcements.edit', id=announcement.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            {% if announcement.status != 'cancelado' %}
+            <form action="{{ url_for('announcements.cancel', id=announcement.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja cancelar este comunicado?');">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <h2 class="h3 mb-0 text-gray-800">{{ announcement.title }}</h2>
+                
+                <div>
+                    {% if announcement.priority == 'urgent' %}
+                        <span class="badge bg-danger fs-6"><i class="bi bi-exclamation-triangle"></i> Urgente</span>
+                    {% elif announcement.priority == 'important' %}
+                        <span class="badge bg-warning text-dark fs-6"><i class="bi bi-star"></i> Importante</span>
+                    {% else %}
+                        <span class="badge bg-info fs-6"><i class="bi bi-info-circle"></i> Normal</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-muted mt-2 d-flex flex-wrap gap-3">
+                <span><i class="bi bi-person"></i> Por: {{ announcement.author.username }}</span>
+                <span><i class="bi bi-calendar-check"></i> Publicado em: {{ announcement.published_at.strftime('%d/%m/%Y %H:%M') if announcement.published_at else '-' }}</span>
+                {% if announcement.expires_at %}
+                <span><i class="bi bi-calendar-x"></i> Expira em: {{ announcement.expires_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                {% endif %}
+            </div>
+            
+            {% if current_user.has_permission('announcements.manage') %}
+            <div class="mt-2 text-muted">
+                <i class="bi bi-bullseye"></i> <strong>Público-alvo:</strong> 
+                {% for rec in announcement.recipients %}
+                    <span class="badge bg-secondary">{{ rec.target_type }}{% if rec.target_type == 'turma' %} (Turma: {{ rec.target_id }}){% endif %}</span>
+                {% endfor %}
+            </div>
+            <div class="mt-2 text-muted">
+                <i class="bi bi-eye"></i> <strong>Visualizações:</strong> {{ announcement.reads.count() }} leitura(s) registrada(s).
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="card-body p-4" style="min-height: 200px; white-space: pre-line;">
+            {{ announcement.content }}
+        </div>
+    </div>
+</div>
+{% endblock %}

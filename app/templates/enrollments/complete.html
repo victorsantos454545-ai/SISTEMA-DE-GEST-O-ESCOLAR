@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "components/form_macros.html" import render_field %}
+
+{% block title %}Concluir Matrícula - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.index') }}">Matrículas</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.detail', id=enrollment.id) }}">Detalhes</a></li>
+<li class="breadcrumb-item active">Concluir</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-6">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="mb-0">Concluir Matrícula</h2>
+        </div>
+
+        <div class="alert alert-success">
+            Você está concluindo a matrícula de <strong>{{ enrollment.student.full_name }}</strong> na turma <strong>{{ enrollment.school_class.name }}</strong>.
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="row mb-3">
+                        <div class="col-12 mb-3">
+                            {{ render_field(form.complete_date) }}
+                        </div>
+                        <div class="col-12 mb-3">
+                            {{ render_field(form.notes) }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end border-top pt-4 mt-2">
+                        <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-light me-2">Cancelar</a>
+                        {{ form.submit(class="btn btn-success px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Disciplinas - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item active">Disciplinas</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Disciplinas</h2>
+    {% if can_edit %}
+    <a href="{{ url_for('subjects.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Nova Disciplina
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtros e Busca -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('subjects.index') }}" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por nome ou código..." value="{{ search }}">
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">Todos os status</option>
+                    <option value="ativa" {% if status == 'ativa' %}selected{% endif %}>Ativa</option>
+                    <option value="inativa" {% if status == 'inativa' %}selected{% endif %}>Inativa</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex">
+                <button type="submit" class="btn btn-primary me-2 flex-grow-1"><i class="bi bi-search"></i> Buscar</button>
+                <a href="{{ url_for('subjects.index') }}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Nome</th>
+                        <th>Código</th>
+                        <th>Carga Horária</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subjects.items %}
+                    <tr>
+                        <td class="ps-4 fw-medium">{{ subject.name }}</td>
+                        <td>{{ subject.code or '-' }}</td>
+                        <td>{{ subject.workload or 0 }}h</td>
+                        <td>
+                            {% if subject.status == 'ativa' %}
+                            <span class="badge bg-success">Ativa</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Inativa</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('subjects.detail', id=subject.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if can_edit %}
+                            <a href="{{ url_for('subjects.edit', id=subject.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">Nenhuma disciplina encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% if subjects.pages > 1 %}
+    <div class="card-footer bg-white pt-3 pb-0">
+        <nav aria-label="Navegação de disciplinas">
+            <ul class="pagination justify-content-center mb-2">
+                <li class="page-item {% if not subjects.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{% if subjects.has_prev %}{{ url_for('subjects.index', page=subjects.prev_num, q=search, status=status) }}{% else %}#{% endif %}">Anterior</a>
+                </li>
+                
+                {% for p in subjects.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == subjects.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('subjects.index', page=p, q=search, status=status) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not subjects.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{% if subjects.has_next %}{{ url_for('subjects.index', page=subjects.next_num, q=search, status=status) }}{% else %}#{% endif %}">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

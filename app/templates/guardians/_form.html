@@ -1,0 +1,43 @@
+{% from 'components/form_macros.html' import render_field %}
+
+{{ form.hidden_tag() }}
+
+<div class="row">
+    <!-- Dados Pessoais -->
+    <div class="col-12 mb-4">
+        <h5 class="border-bottom pb-2 mb-3 text-primary">Dados Pessoais</h5>
+        <div class="row">
+            <div class="col-md-8">{{ render_field(form.full_name) }}</div>
+            <div class="col-md-4">{{ render_field(form.cpf, 'person-badge') }}</div>
+        </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="col-12 mb-4">
+        <h5 class="border-bottom pb-2 mb-3 text-primary">Contato</h5>
+        <div class="row">
+            <div class="col-md-4">{{ render_field(form.phone, 'telephone') }}</div>
+            <div class="col-md-4">{{ render_field(form.secondary_phone, 'telephone') }}</div>
+            <div class="col-md-4">{{ render_field(form.email, 'envelope') }}</div>
+        </div>
+    </div>
+
+    <!-- Endereço -->
+    <div class="col-12 mb-4">
+        <h5 class="border-bottom pb-2 mb-3 text-primary">Endereço</h5>
+        <div class="row">
+            <div class="col-md-3">{{ render_field(form.zip_code, 'geo-alt') }}</div>
+            <div class="col-md-7">{{ render_field(form.address) }}</div>
+            <div class="col-md-2">{{ render_field(form.number) }}</div>
+            <div class="col-md-4">{{ render_field(form.complement) }}</div>
+            <div class="col-md-3">{{ render_field(form.neighborhood) }}</div>
+            <div class="col-md-3">{{ render_field(form.city) }}</div>
+            <div class="col-md-2">{{ render_field(form.state) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2 mt-3">
+    <a href="{{ url_for('guardians.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+    {{ form.submit(class="btn btn-primary") }}
+</div>

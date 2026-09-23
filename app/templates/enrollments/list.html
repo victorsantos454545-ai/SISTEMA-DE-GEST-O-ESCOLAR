@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Matrículas - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item active">Matrículas</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Matrículas</h2>
+    {% if can_create %}
+    <a href="{{ url_for('enrollments.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Nova Matrícula
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtros e Busca -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('enrollments.index') }}" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control" placeholder="Buscar aluno (Nome/CPF) ou ID..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <select name="year_id" class="form-select">
+                    <option value="">Ano Letivo</option>
+                    {% for y in years %}
+                    <option value="{{ y.id }}" {% if year_id|string == y.id|string %}selected{% endif %}>{{ y.year }} {% if y.active %}(Ativo){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="class_id" class="form-select">
+                    <option value="">Turma</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}" {% if class_id|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">Situação</option>
+                    <option value="ativa" {% if status == 'ativa' %}selected{% endif %}>Ativa</option>
+                    <option value="pendente" {% if status == 'pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="transferida" {% if status == 'transferida' %}selected{% endif %}>Transferida</option>
+                    <option value="cancelada" {% if status == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                    <option value="concluida" {% if status == 'concluida' %}selected{% endif %}>Concluída</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex">
+                <button type="submit" class="btn btn-primary me-2 flex-grow-1"><i class="bi bi-search"></i> Filtrar</button>
+                <a href="{{ url_for('enrollments.index') }}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Aluno</th>
+                        <th>Ano Letivo</th>
+                        <th>Turma</th>
+                        <th>Data</th>
+                        <th>Situação</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enr in enrollments.items %}
+                    <tr>
+                        <td class="ps-4 fw-medium">
+                            <a href="{{ url_for('students.detail', student_id=enr.student.id) }}" class="text-decoration-none">
+                                {{ enr.student.full_name }}
+                            </a>
+                        </td>
+                        <td>{{ enr.school_year.year }}</td>
+                        <td>
+                            <a href="{{ url_for('classes.detail', id=enr.school_class.id) }}" class="text-decoration-none">
+                                {{ enr.school_class.name }}
+                            </a>
+                        </td>
+                        <td>{{ enr.enrollment_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if enr.status == 'ativa' %}
+                            <span class="badge bg-success">Ativa</span>
+                            {% elif enr.status == 'pendente' %}
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                            {% elif enr.status == 'transferida' %}
+                            <span class="badge bg-info text-dark">Transferida</span>
+                            {% elif enr.status == 'concluida' %}
+                            <span class="badge bg-primary">Concluída</span>
+                            {% else %}
+                            <span class="badge bg-danger">Cancelada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('enrollments.detail', id=enr.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                <i class="bi bi-eye"></i> Visualizar
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Nenhuma matrícula encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% if enrollments.pages > 1 %}
+    <div class="card-footer bg-white pt-3 pb-0">
+        <nav aria-label="Navegação de matrículas">
+            <ul class="pagination justify-content-center mb-2">
+                <li class="page-item {% if not enrollments.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{% if enrollments.has_prev %}{{ url_for('enrollments.index', page=enrollments.prev_num, q=search, status=status, year_id=year_id, class_id=class_id) }}{% else %}#{% endif %}">Anterior</a>
+                </li>
+                
+                {% for p in enrollments.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == enrollments.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('enrollments.index', page=p, q=search, status=status, year_id=year_id, class_id=class_id) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not enrollments.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{% if enrollments.has_next %}{{ url_for('enrollments.index', page=enrollments.next_num, q=search, status=status, year_id=year_id, class_id=class_id) }}{% else %}#{% endif %}">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

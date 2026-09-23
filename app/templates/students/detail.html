@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Detalhes do Aluno{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header e Ações -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-0 text-gray-800 d-flex align-items-center">
+                <a href="{{ url_for('students.index') }}" class="text-decoration-none text-muted me-3"><i class="bi bi-arrow-left"></i></a>
+                {{ student.social_name or student.full_name }}
+                
+                {% if student.status == 'ativo' %}
+                    <span class="badge bg-success ms-3 fs-6">Ativo</span>
+                {% elif student.status == 'inativo' %}
+                    <span class="badge bg-secondary ms-3 fs-6">Inativo</span>
+                {% elif student.status == 'transferido' %}
+                    <span class="badge bg-warning text-dark ms-3 fs-6">Transferido</span>
+                {% else %}
+                    <span class="badge bg-primary ms-3 fs-6">Concluído</span>
+                {% endif %}
+            </h2>
+            {% if student.social_name %}
+                <div class="text-muted ms-5 ps-3 mt-1">Nome Civil: {{ student.full_name }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex gap-2">
+            {% if current_user.has_permission('attendance.view') %}
+            <a href="{{ url_for('attendance.student_report', student_id=student.id) }}" class="btn btn-info text-white">
+                <i class="bi bi-clipboard-check me-2"></i>Frequência
+            </a>
+            {% endif %}
+            {% if current_user.has_permission('grades.view') %}
+            <a href="{{ url_for('academic.report_card', student_id=student.id) }}" class="btn btn-primary">
+                <i class="bi bi-journal-text me-2"></i>Boletim
+            </a>
+            {% endif %}
+            {% if can_edit %}
+                <a href="{{ url_for('students.edit', student_id=student.id) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+                
+                {% if student.status == 'ativo' %}
+                    <form method="POST" action="{{ url_for('students.deactivate', student_id=student.id) }}" onsubmit="return confirm('Deseja realmente desativar este aluno? O histórico será preservado.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-warning"><i class="bi bi-pause-circle me-1"></i> Desativar</button>
+                    </form>
+                {% else %}
+                    <form method="POST" action="{{ url_for('students.activate', student_id=student.id) }}" onsubmit="return confirm('Deseja reativar este aluno?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-success"><i class="bi bi-play-circle me-1"></i> Ativar</button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Layout Dividido -->
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <!-- Dados Pessoais -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Dados Pessoais</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0">
+                            <strong>Data de Nascimento:</strong><br>
+                            {{ student.birth_date.strftime('%d/%m/%Y') if student.birth_date else 'Não informada' }}
+                        </li>
+                        <li class="list-group-item px-0">
+                            <strong>CPF:</strong><br>
+                            {{ student.cpf or 'Não informado' }}
+                        </li>
+                        <li class="list-group-item px-0">
+                            <strong>RG:</strong><br>
+                            {{ student.rg or 'Não informado' }}
+                        </li>
+                        <li class="list-group-item px-0">
+                            <strong>Gênero:</strong><br>
+                            {{ {'M': 'Masculino', 'F': 'Feminino', 'O': 'Outro'}.get(student.gender, 'Não informado') }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Contato -->
+            {% if current_user.has_permission('students.view') or current_user.role.name == 'aluno' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Contato</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex mb-3">
+                        <div class="me-3 text-primary"><i class="bi bi-telephone fs-4"></i></div>
+                        <div>
+                            <div class="text-muted small">Telefone</div>
+                            <div class="fw-bold">{{ student.phone or 'Não informado' }}</div>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="me-3 text-primary"><i class="bi bi-envelope fs-4"></i></div>
+                        <div>
+                            <div class="text-muted small">E-mail</div>
+                            <div class="fw-bold">{{ student.email or 'Não informado' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Endereço</h6>
+                </div>
+                <div class="card-body">
+                    {% if student.address %}
+                        <p class="mb-0">
+                            {{ student.address }}, {{ student.number or 'S/N' }}<br>
+                            {% if student.complement %}{{ student.complement }}<br>{% endif %}
+                            {{ student.neighborhood }}<br>
+                            {{ student.city }} - {{ student.state }}<br>
+                            CEP: {{ student.zip_code }}
+                        </p>
+                    {% else %}
+                        <span class="text-muted">Endereço não informado.</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Responsáveis -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Responsáveis</h6>
+                    {% if can_manage_guardians and link_form %}
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linkGuardianModal">
+                            <i class="bi bi-plus"></i> Adicionar
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if student.guardian_links.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Relação</th>
+                                        <th>Contato</th>
+                                        <th class="text-center">Principal</th>
+                                        {% if can_manage_guardians %}
+                                        <th class="text-end">Ações</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in student.guardian_links %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('guardians.detail', guardian_id=link.guardian.id) }}" class="text-decoration-none fw-bold">
+                                                {{ link.guardian.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ link.relationship }}</td>
+                                        <td>
+                                            <small><i class="bi bi-telephone"></i> {{ link.guardian.phone }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if link.is_primary %}
+                                                <span class="badge bg-success"><i class="bi bi-star-fill"></i></span>
+                                            {% else %}
+                                                {% if can_manage_guardians %}
+                                                <form method="POST" action="{{ url_for('students.set_primary', student_id=student.id, guardian_id=link.guardian.id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-star"></i></button>
+                                                </form>
+                                                {% else %}
+                                                    <span class="text-muted"><i class="bi bi-star"></i></span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        {% if can_manage_guardians %}
+                                        <td class="text-end">
+                                            <form method="POST" action="{{ url_for('students.unlink', student_id=student.id, guardian_id=link.guardian.id) }}" onsubmit="return confirm('Remover este vínculo?');" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Desvincular"><i class="bi bi-x-circle"></i></button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum responsável vinculado.', 'people', '#', None) }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Histórico Acadêmico (Matrículas) -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Histórico de Matrículas</h6>
+                    {% if current_user.has_permission('enrollments.create') %}
+                    <a href="{{ url_for('enrollments.create', student_id=student.id) }}" class="btn btn-sm btn-primary">Nova Matrícula</a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if student.enrollments.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Data</th>
+                                        <th>Turma</th>
+                                        <th>Ano Letivo</th>
+                                        <th>Status</th>
+                                        <th class="text-end pe-3">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for enc in student.enrollments.order_by(student.enrollments.property.mapper.class_.enrollment_date.desc()) %}
+                                    <tr>
+                                        <td class="ps-3">{{ enc.enrollment_date.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ enc.school_class.name }}</td>
+                                        <td>{{ enc.school_year.year }}</td>
+                                        <td>
+                                            {% if enc.status == 'ativa' %}
+                                            <span class="badge bg-success">Ativa</span>
+                                            {% elif enc.status == 'pendente' %}
+                                            <span class="badge bg-warning text-dark">Pendente</span>
+                                            {% elif enc.status == 'transferida' %}
+                                            <span class="badge bg-info text-dark">Transferida</span>
+                                            {% elif enc.status == 'concluida' %}
+                                            <span class="badge bg-primary">Concluída</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Cancelada</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            {% if current_user.has_permission('enrollments.view') %}
+                                            <a href="{{ url_for('enrollments.detail', id=enc.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver Matrícula"><i class="bi bi-eye"></i></a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Sem histórico de matrículas.', 'journal-x') }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Resumo Acadêmico -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Resumo Acadêmico Geral</h6>
+                </div>
+                <div class="card-body">
+                    {% if history.frequency.total > 0 %}
+                    <div class="row">
+                        <div class="col-sm-6 mb-3 mb-sm-0">
+                            <div class="border rounded p-3 text-center h-100">
+                                <div class="text-muted small mb-1">Frequência Global</div>
+                                <h3 class="text-primary mb-0">{{ history.frequency.percent }}%</h3>
+                                <small class="text-muted">{{ history.frequency.presents }} de {{ history.frequency.total }} aulas</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center h-100">
+                                <div class="text-muted small mb-1">Média Geral</div>
+                                <h3 class="text-secondary mb-0">{{ history.avg_grade }}</h3>
+                                <small class="text-muted">Aguardando dados consolidados</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum dado acadêmico consolidado.', 'bar-chart') }}
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Vincular Responsável -->
+{% if can_manage_guardians and link_form %}
+<div class="modal fade" id="linkGuardianModal" tabindex="-1" aria-labelledby="linkGuardianModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="linkGuardianModalLabel">Vincular Responsável</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('students.link_guardian', student_id=student.id) }}">
+                <div class="modal-body">
+                    {{ link_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ link_form.guardian_id.label(class="form-label") }}
+                        {{ link_form.guardian_id(class="form-select") }}
+                        <div class="form-text">
+                            <a href="{{ url_for('guardians.create') }}" target="_blank">Cadastrar novo responsável <i class="bi bi-box-arrow-up-right"></i></a>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ link_form.relationship.label(class="form-label") }}
+                        {{ link_form.relationship(class="form-control") }}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ link_form.is_primary(class="form-check-input") }}
+                        {{ link_form.is_primary.label(class="form-check-label") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    {{ link_form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Detalhes do Responsável{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header e Ações -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800 d-flex align-items-center">
+            <a href="{{ url_for('guardians.index') }}" class="text-decoration-none text-muted me-3"><i class="bi bi-arrow-left"></i></a>
+            {{ guardian.full_name }}
+        </h2>
+        
+        <div class="d-flex gap-2">
+            {% if can_edit %}
+                <a href="{{ url_for('guardians.edit', guardian_id=guardian.id) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <!-- Dados Pessoais -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Dados Pessoais</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0">
+                            <strong>CPF:</strong><br>
+                            {{ guardian.cpf or 'Não informado' }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Contato -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Contato</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex mb-3">
+                        <div class="me-3 text-primary"><i class="bi bi-telephone fs-4"></i></div>
+                        <div>
+                            <div class="text-muted small">Telefones</div>
+                            <div class="fw-bold">{{ guardian.phone }}</div>
+                            {% if guardian.secondary_phone %}
+                            <div>{{ guardian.secondary_phone }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="me-3 text-primary"><i class="bi bi-envelope fs-4"></i></div>
+                        <div>
+                            <div class="text-muted small">E-mail</div>
+                            <div class="fw-bold">{{ guardian.email or 'Não informado' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Endereço -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Endereço</h6>
+                </div>
+                <div class="card-body">
+                    {% if guardian.address %}
+                        <p class="mb-0">
+                            {{ guardian.address }}, {{ guardian.number or 'S/N' }}<br>
+                            {% if guardian.complement %}{{ guardian.complement }}<br>{% endif %}
+                            {{ guardian.neighborhood }}<br>
+                            {{ guardian.city }} - {{ guardian.state }}<br>
+                            CEP: {{ guardian.zip_code }}
+                        </p>
+                    {% else %}
+                        <span class="text-muted">Endereço não informado.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Alunos Vinculados -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Alunos Vinculados</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if guardian.student_links.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Relação</th>
+                                        <th class="text-center">Principal</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in guardian.student_links %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('students.detail', student_id=link.student.id) }}" class="text-decoration-none fw-bold">
+                                                {{ link.student.social_name or link.student.full_name }}
+                                            </a>
+                                            {% set active_enroll = link.student.enrollments.filter_by(status='ativa').first() %}
+                                            {% if active_enroll %}
+                                                <br><small class="text-muted">Turma: {{ active_enroll.school_class.name }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ link.relationship }}</td>
+                                        <td class="text-center">
+                                            {% if link.is_primary %}
+                                                <span class="badge bg-success"><i class="bi bi-star-fill"></i> Principal</span>
+                                            {% else %}
+                                                <span class="text-muted"><i class="bi bi-star"></i></span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ url_for('students.detail', student_id=link.student.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Aluno">
+                                                <i class="bi bi-eye"></i> Acessar Aluno
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum aluno vinculado.', 'people', '#', None) }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

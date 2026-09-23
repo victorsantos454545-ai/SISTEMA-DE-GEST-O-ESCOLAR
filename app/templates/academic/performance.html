@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4">
+    <h2>Desempenho da Turma</h2>
+    <p class="text-muted mb-0">
+        <strong>Turma:</strong> {{ school_class.name }} | 
+        <strong>Turno:</strong> {{ school_class.shift }}
+    </p>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Visão geral do desempenho da turma em construção. O painel interativo (com gráficos) será agregado aqui.
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Alunos Matriculados</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for enrollment in school_class.enrollments %}
+        {% if enrollment.status == 'ativa' %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            {{ enrollment.student.name }}
+            <a href="{{ url_for('academic.report_card', student_id=enrollment.student_id) }}" class="btn btn-sm btn-outline-primary">
+                Ver Boletim
+            </a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="list-group-item text-center text-muted">
+            Nenhum aluno ativo nesta turma.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

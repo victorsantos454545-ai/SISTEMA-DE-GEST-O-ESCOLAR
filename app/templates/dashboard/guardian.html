@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% from 'components/stat_card.html' import render_stat_card %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Dashboard - Responsável{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Painel do Responsável</h2>
+    </div>
+
+    <!-- Indicadores Básicos -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            {{ render_stat_card('Meus Alunos', data.students|length, 'person-hearts', 'primary') }}
+        </div>
+        <div class="col-md-4">
+            {{ render_stat_card('Avaliações Próximas', data.upcoming_assessments|length, 'calendar-event', 'warning') }}
+        </div>
+        <div class="col-md-4">
+            {{ render_stat_card('Atividades Pendentes', data.recent_activities|length, 'journal-bookmark', 'info') }}
+        </div>
+    </div>
+
+    <!-- Meus Alunos -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Estudantes Vinculados</h6>
+        </div>
+        <div class="card-body">
+            {% if data.students %}
+                <div class="row g-4">
+                    {% for student in data.students %}
+                    <div class="col-lg-6">
+                        <div class="d-flex align-items-center p-3 border rounded">
+                            <div class="me-3">
+                                <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                    {{ student.full_name[0] }}
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">{{ student.full_name }}</h5>
+                                <div class="text-muted small">
+                                    {% if student.enrollments.filter_by(status='ativa').first() %}
+                                        Turma: {{ student.enrollments.filter_by(status='ativa').first().school_class.name }}
+                                    {% else %}
+                                        Sem matrícula ativa
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {{ render_empty_state('Nenhum aluno vinculado à sua conta.', 'person-slash') }}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Próximas Avaliações -->
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Avaliações das Turmas</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.upcoming_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <tbody>
+                                    {% for ass in data.upcoming_assessments %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ ass.date.strftime('%d/%m/%Y') }}</div>
+                                            <small class="text-muted">{{ ass.school_class.name }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ ass.title }}</strong><br>
+                                            <span class="text-muted small">{{ ass.subject.name }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma avaliação programada.', 'calendar-x') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Avisos -->
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-left-warning">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">Mural de Avisos</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if announcements %}
+                        <div class="list-group list-group-flush">
+                            {% for ann in announcements %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">{{ ann.title }}</h6>
+                                <p class="mb-1 small">{{ ann.content | striptags }}</p>
+                                <small class="text-muted">Publicado em {{ ann.published_at.strftime('%d/%m/%Y') if ann.published_at else '-' }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum aviso no momento.', 'bell') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} - {{ school_name }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('users.index') }}">Usuarios</a></li>
+<li class="breadcrumb-item active">{{ user.username }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>{{ user.username }}</h5>
+                <div>
+                    {% if user.active %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                    <span class="badge bg-danger">Inativo</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Nome de Usuario</div>
+                    <div class="col-sm-8">{{ user.username }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">E-mail</div>
+                    <div class="col-sm-8">{{ user.email }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Papel</div>
+                    <div class="col-sm-8"><span class="badge bg-secondary">{{ user.role.description or user.role.name }}</span></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Perfil Vinculado</div>
+                    <div class="col-sm-8">{{ user.display_name if user.profile else 'Nenhum' }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Data de Criacao</div>
+                    <div class="col-sm-8">{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else '-' }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Ultimo Login</div>
+                    <div class="col-sm-8">{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Nunca' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header"><h6 class="mb-0">Acoes</h6></div>
+            <div class="card-body d-grid gap-2">
+                {% if current_user.has_permission('users.edit') %}
+                <a href="{{ url_for('users.edit', user_id=user.id) }}" class="btn btn-outline-warning">
+                    <i class="bi bi-pencil me-2"></i>Editar
+                </a>
+                {% endif %}
+
+                {% if current_user.has_permission('users.manage') %}
+                <a href="{{ url_for('users.reset_password', user_id=user.id) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-key me-2"></i>Redefinir Senha
+                </a>
+
+                {% if user.active and user.id != current_user.id %}
+                <form method="POST" action="{{ url_for('users.deactivate', user_id=user.id) }}" onsubmit="return confirm('Desativar este usuario?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-person-x me-2"></i>Desativar
+                    </button>
+                </form>
+                {% elif not user.active %}
+                <form method="POST" action="{{ url_for('users.activate', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-success w-100">
+                        <i class="bi bi-person-check me-2"></i>Ativar
+                    </button>
+                </form>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

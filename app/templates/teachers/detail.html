@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Professor: {{ teacher.full_name }} - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('teachers.index') }}">Professores</a></li>
+<li class="breadcrumb-item active">Perfil do Professor</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8 d-flex align-items-center">
+        <a href="{{ url_for('teachers.index') }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar à lista">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">Perfil do Professor</h2>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        {% if can_edit %}
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear-fill me-1"></i> Ações
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="actionsDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('teachers.edit', id=teacher.id) }}"><i class="bi bi-pencil me-2 text-primary"></i>Editar Professor</a></li>
+                <li><hr class="dropdown-divider"></li>
+                
+                {% if teacher.status == 'ativo' %}
+                    {% if current_user.has_permission('teachers.deactivate') %}
+                    <li>
+                        <form method="POST" action="{{ url_for('teachers.deactivate', id=teacher.id) }}" onsubmit="return confirm('Deseja realmente desativar este professor?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-person-dash me-2"></i>Desativar</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                {% else %}
+                    {% if current_user.has_permission('teachers.activate') %}
+                    <li>
+                        <form method="POST" action="{{ url_for('teachers.activate', id=teacher.id) }}" onsubmit="return confirm('Deseja reativar este professor?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-person-check me-2"></i>Reativar</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Esquerda: Resumo do Perfil -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 display-4 fw-bold" style="width: 120px; height: 120px;">
+                    {{ teacher.full_name[:2].upper() }}
+                </div>
+                <h4 class="card-title fw-bold text-dark mb-1">{{ teacher.full_name }}</h4>
+                <p class="text-muted mb-3">{{ teacher.registration }}</p>
+                
+                <div class="mb-4">
+                    {% if teacher.status == 'ativo' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                    {% elif teacher.status == 'inativo' %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-x-circle me-1"></i>Inativo</span>
+                    {% elif teacher.status == 'afastado' %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-clock-history me-1"></i>Afastado</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill fs-6">{{ teacher.status.title() }}</span>
+                    {% endif %}
+                </div>
+                
+                <ul class="list-group list-group-flush text-start">
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-mortarboard text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Formação</small>
+                            <span class="fw-medium">{{ teacher.education or 'Não informada' }}</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-award text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Especialização</small>
+                            <span class="fw-medium">{{ teacher.specialization or 'Não informada' }}</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-calendar-event text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Membro desde</small>
+                            <span class="fw-medium">{{ teacher.created_at.strftime('%d/%m/%Y') if teacher.created_at else '-' }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Coluna Direita: Detalhes, Disciplinas, Turmas -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom pt-3 pb-0">
+                <ul class="nav nav-tabs border-bottom-0" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-medium text-dark" id="dados-tab" data-bs-toggle="tab" data-bs-target="#dados" type="button" role="tab" aria-selected="true">
+                            <i class="bi bi-info-circle me-1"></i>Dados Pessoais
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium text-dark" id="disciplinas-tab" data-bs-toggle="tab" data-bs-target="#disciplinas" type="button" role="tab" aria-selected="false">
+                            <i class="bi bi-book me-1"></i>Disciplinas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium text-dark" id="turmas-tab" data-bs-toggle="tab" data-bs-target="#turmas" type="button" role="tab" aria-selected="false">
+                            <i class="bi bi-people me-1"></i>Turmas
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="tab-content" id="profileTabsContent">
+                    
+                    <!-- Aba Dados Pessoais -->
+                    <div class="tab-pane fade show active" id="dados" role="tabpanel" aria-labelledby="dados-tab">
+                        <h6 class="text-primary fw-bold text-uppercase mb-3">Informações de Contato</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">Telefone</label>
+                                <div class="fw-medium">{{ teacher.phone or 'Não informado' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">E-mail</label>
+                                <div class="fw-medium">{{ teacher.email or 'Não informado' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">CPF</label>
+                                <div class="fw-medium">
+                                    {% if teacher.cpf %}
+                                        ***.{{ teacher.cpf[3:6] }}.{{ teacher.cpf[6:9] }}-**
+                                    {% else %}
+                                        Não informado
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">Data de Nascimento</label>
+                                <div class="fw-medium">{{ teacher.birth_date.strftime('%d/%m/%Y') if teacher.birth_date else 'Não informada' }}</div>
+                            </div>
+                        </div>
+                        
+                        <h6 class="text-primary fw-bold text-uppercase mb-3 border-top pt-4">Endereço</h6>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="text-muted small mb-1">Logradouro</label>
+                                <div class="fw-medium">
+                                    {{ teacher.address or 'Não informado' }}
+                                    {% if teacher.number %}, {{ teacher.number }}{% endif %}
+                                    {% if teacher.complement %} - {{ teacher.complement }}{% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">Bairro</label>
+                                <div class="fw-medium">{{ teacher.neighborhood or 'Não informado' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">CEP</label>
+                                <div class="fw-medium">{{ teacher.zip_code or 'Não informado' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">Cidade</label>
+                                <div class="fw-medium">{{ teacher.city or 'Não informada' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="text-muted small mb-1">Estado (UF)</label>
+                                <div class="fw-medium">{{ teacher.state or 'Não informado' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Aba Disciplinas -->
+                    <div class="tab-pane fade" id="disciplinas" role="tabpanel" aria-labelledby="disciplinas-tab">
+                        {% if can_manage_subjects %}
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Vincular Nova Disciplina</h6>
+                                <form action="{{ url_for('teachers.link_subject', id=teacher.id) }}" method="POST" class="row gx-2 align-items-end">
+                                    {{ subject_form.hidden_tag() }}
+                                    <div class="col-md-8 mb-2 mb-md-0">
+                                        {{ subject_form.subject_id(class="form-select") }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        {{ subject_form.submit(class="btn btn-primary w-100") }}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Disciplina</th>
+                                        <th>Carga Horária</th>
+                                        {% if can_manage_subjects %}
+                                        <th class="text-end">Ações</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subject in teacher.subjects %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary">{{ subject.code or '-' }}</span></td>
+                                        <td class="fw-medium">{{ subject.name }}</td>
+                                        <td>{{ subject.workload }}h</td>
+                                        {% if can_manage_subjects %}
+                                        <td class="text-end">
+                                            <form action="{{ url_for('teachers.unlink_subject', id=teacher.id, subject_id=subject.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover esta disciplina do professor?');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover Vínculo">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="{% if can_manage_subjects %}4{% else %}3{% endif %}" class="text-center py-4">
+                                            <div class="text-muted"><i class="bi bi-journal-x fs-3 d-block mb-2"></i>Nenhuma disciplina vinculada.</div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Aba Turmas -->
+                    <div class="tab-pane fade" id="turmas" role="tabpanel" aria-labelledby="turmas-tab">
+                        {% if can_manage_classes %}
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Vincular a uma Turma</h6>
+                                <form action="{{ url_for('teachers.link_class', id=teacher.id) }}" method="POST" class="row gx-2 align-items-end">
+                                    {{ class_form.hidden_tag() }}
+                                    <div class="col-md-5 mb-2 mb-md-0">
+                                        <label class="form-label small text-muted">Turma</label>
+                                        {{ class_form.class_id(class="form-select") }}
+                                    </div>
+                                    <div class="col-md-4 mb-2 mb-md-0">
+                                        <label class="form-label small text-muted">Coordenador?</label>
+                                        {{ class_form.is_coordinator(class="form-select") }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        {{ class_form.submit(class="btn btn-primary w-100") }}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Turma</th>
+                                        <th>Série / Turno</th>
+                                        <th>Papel</th>
+                                        {% if can_manage_classes %}
+                                        <th class="text-end">Ações</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for class_link in teacher.class_links %}
+                                    <tr>
+                                        <td class="fw-medium">{{ class_link.school_class.name }}</td>
+                                        <td>
+                                            <div class="small">{{ class_link.school_class.grade or '-' }}</div>
+                                            <div class="text-muted small">{{ class_link.school_class.shift }}</div>
+                                        </td>
+                                        <td>
+                                            {% if class_link.is_coordinator %}
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"><i class="bi bi-star-fill me-1"></i>Coordenador</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Professor</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if can_manage_classes %}
+                                        <td class="text-end">
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                    {% if not class_link.is_coordinator %}
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('teachers.set_coordinator', id=teacher.id, class_id=class_link.school_class.id) }}">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <button type="submit" class="dropdown-item"><i class="bi bi-star me-2 text-primary"></i>Tornar Coordenador</button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <form method="POST" action="{{ url_for('teachers.unlink_class', id=teacher.id, class_id=class_link.school_class.id) }}" onsubmit="return confirm('Remover professor desta turma?');">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Desvincular Turma</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="{% if can_manage_classes %}4{% else %}3{% endif %}" class="text-center py-4">
+                                            <div class="text-muted"><i class="bi bi-easel fs-3 d-block mb-2"></i>Nenhuma turma vinculada.</div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Alunos{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Relatório de Alunos</h1>
+        <div>
+            <!-- Botões de Exportação -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('reports.students_report', export='csv', **request.args) }}"><i class="bi bi-filetype-csv text-success"></i> CSV</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('reports.students_report', export='xlsx', **request.args) }}"><i class="bi bi-file-earmark-excel text-success"></i> Excel</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('reports.students_report', export='pdf', **request.args) }}" target="_blank"><i class="bi bi-file-earmark-pdf text-danger"></i> PDF</a></li>
+                </ul>
+            </div>
+            <button onclick="window.print()" class="btn btn-sm btn-primary">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4 d-print-none">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Nome do Aluno</label>
+                    <input type="text" name="name" class="form-control" value="{{ filters.name }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Turma</label>
+                    <select name="school_class_id" class="form-select">
+                        <option value="">Todas</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if filters.school_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endendfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="ativo" {% if filters.status == 'ativo' %}selected{% endif %}>Ativo</option>
+                        <option value="inativo" {% if filters.status == 'inativo' %}selected{% endif %}>Inativo</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card shadow-sm mb-4 print-section">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome Completo</th>
+                            <th>Matrícula</th>
+                            <th>Turma(s) Ativa(s)</th>
+                            <th>Status</th>
+                            <th class="d-print-none">Boletim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>{{ s.id }}</td>
+                            <td>{{ s.full_name }}</td>
+                            <td>{{ s.cpf }}</td> <!-- Placeholder for Matricula -->
+                            <td>
+                                {% for e in s.enrollments %}
+                                    {% if e.status == 'ativa' %}
+                                        <span class="badge bg-info">{{ e.school_class.name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if s.status == 'ativo' %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ s.status | capitalize }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="d-print-none">
+                                <a href="{{ url_for('reports.report_card', student_id=s.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Boletim">
+                                    <i class="bi bi-journal-text"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">Nenhum aluno encontrado com os filtros atuais.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Paginação -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="card-footer bg-white d-print-none">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.students_report', page=pagination.prev_num, **filters) }}">Anterior</a>
+                    </li>
+                    <li class="page-item disabled"><span class="page-link">Página {{ pagination.page }} de {{ pagination.pages }}</span></li>
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('reports.students_report', page=pagination.next_num, **filters) }}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

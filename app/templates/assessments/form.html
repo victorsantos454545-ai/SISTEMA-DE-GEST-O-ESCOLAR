@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "components/form_macros.html" as macros %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.csrf_token }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            {{ macros.render_field(form.title) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ macros.render_field(form.assessment_type) }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ macros.render_field(form.school_class_id) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ macros.render_field(form.subject_id) }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ macros.render_field(form.teacher_id) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ macros.render_field(form.period_id) }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            {{ macros.render_field(form.date) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ macros.render_field(form.max_value) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ macros.render_field(form.weight) }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ macros.render_field(form.description, rows=3) }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('assessments.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% from 'components/stat_card.html' import render_stat_card %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Dashboard - Aluno{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Meu Painel Escolar</h2>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Minhas Turmas', data.my_classes|length, 'collection', 'primary') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Próx. Avaliações', data.upcoming_assessments|length, 'calendar-check', 'warning') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Atividades', data.recent_activities|length, 'journal-text', 'info') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="card-title mb-0 text-uppercase fw-bold">Frequência</h6>
+                        <i class="bi bi-graph-up-arrow fs-4 opacity-75"></i>
+                    </div>
+                    <h2 class="display-5 fw-bold mb-0">{{ data.frequency.percent }}%</h2>
+                    <small>{{ data.frequency.presents }} presenças de {{ data.frequency.total }} aulas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Aulas de Hoje -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm h-100 border-left-info">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Minhas Aulas Hoje</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.todays_classes %}
+                        <div class="list-group list-group-flush">
+                            {% for sch in data.todays_classes %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ sch.start_time.strftime('%H:%M') }} - {{ sch.end_time.strftime('%H:%M') }}</h6>
+                                    <small class="text-muted">{{ sch.subject.name }} ({{ sch.teacher.full_name }})</small>
+                                </div>
+                                <span class="badge bg-light text-dark"><i class="bi bi-door-open"></i> {{ sch.school_class.room or 'Sala?' }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma aula programada para hoje.', 'emoji-smile') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Próximas Avaliações -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Próximas Avaliações</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.upcoming_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Disciplina</th>
+                                        <th>Avaliação</th>
+                                        <th>Professor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ass in data.upcoming_assessments %}
+                                    <tr>
+                                        <td><span class="fw-bold">{{ ass.date.strftime('%d/%m/%Y') }}</span></td>
+                                        <td>{{ ass.subject.name }}</td>
+                                        <td><strong>{{ ass.title }}</strong></td>
+                                        <td><small class="text-muted">{{ ass.teacher.full_name }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma avaliação próxima.', 'stars') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <!-- Atividades Recentes -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Atividades e Tarefas Recentes</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.recent_activities %}
+                        <div class="list-group list-group-flush">
+                            {% for act in data.recent_activities %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ act.title }} <span class="badge bg-secondary ms-1">{{ act.activity_type }}</span></h6>
+                                    <small class="text-muted">{{ act.subject.name }} ({{ act.teacher.name }})</small>
+                                </div>
+                                {% if act.due_date %}
+                                <span class="badge bg-light text-dark"><i class="bi bi-calendar-event"></i> {{ act.due_date.strftime('%d/%m') }}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma atividade recente.', 'journal-text') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Próximos Eventos -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow-sm border-left-warning h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">Próximos Eventos</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.upcoming_events %}
+                        <div class="list-group list-group-flush">
+                            {% for ev in data.upcoming_events %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ ev.title }} <span class="badge bg-primary ms-1">{{ ev.event_type }}</span></h6>
+                                    <small class="text-muted">{{ ev.start_datetime.strftime('%d/%m/%Y') }}</small>
+                                </div>
+                                <p class="mb-1 small">{{ ev.location }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum evento próximo.', 'calendar-event') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

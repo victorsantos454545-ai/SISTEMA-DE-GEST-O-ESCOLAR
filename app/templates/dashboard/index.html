@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {{ render_empty_state('Bem-vindo ao Sistema de Gestão Escolar.', 'emoji-smile') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

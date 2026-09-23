@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "components/form_macros.html" as macros %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Cancelar Atividade</h5>
+            </div>
+            <div class="card-body">
+                <p>Você está prestes a cancelar a atividade <strong>{{ activity.title }}</strong>.</p>
+                <p class="text-danger small">O cancelamento altera o status para "cancelada", tornando-a invisível para novas ações, mas mantendo o histórico.</p>
+                
+                <form method="POST">
+                    {{ form.csrf_token }}
+                    <div class="mb-4">
+                        {{ macros.render_field(form.reason, rows=3) }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('activities.detail', id=activity.id) }}" class="btn btn-outline-secondary">Voltar</a>
+                        {{ form.submit(class="btn btn-danger") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

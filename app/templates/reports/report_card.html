@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Boletim Escolar - {{ student.full_name }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+@media print {
+    body * { visibility: hidden; }
+    .print-section, .print-section * { visibility: visible; }
+    .print-section { position: absolute; left: 0; top: 0; width: 100%; }
+    .d-print-none { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Boletim Escolar</h1>
+        <div>
+            {% if report %}
+            <div class="btn-group">
+                <a href="{{ url_for('reports.report_card', student_id=student.id, year_id=year_id, export='pdf') }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </a>
+            </div>
+            <button onclick="window.print()" class="btn btn-sm btn-primary">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+            {% endif %}
+            <a href="{{ url_for('reports.students_report') }}" class="btn btn-sm btn-secondary">
+                Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Seletor de Ano Letivo -->
+    <div class="card shadow-sm mb-4 d-print-none">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Selecione o Ano Letivo</label>
+                    <select name="year_id" class="form-select">
+                        {% for y in years %}
+                        <option value="{{ y.id }}" {% if year_id == y.id %}selected{% endif %}>{{ y.year }} - {{ y.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Consultar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if report %}
+    <!-- Área de Impressão -->
+    <div class="card shadow-sm mb-4 print-section">
+        <div class="card-body p-4">
+            
+            <div class="text-center mb-4">
+                <h4 class="mb-1">ESCOLA MODELO</h4>
+                <h5 class="text-muted">Boletim Escolar - Ano Letivo {{ report.enrollment.school_year.year }}</h5>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-sm-6">
+                    <p class="mb-1"><strong>Aluno:</strong> {{ report.student.full_name }}</p>
+                    <p class="mb-1"><strong>Matrícula:</strong> {{ report.student.cpf }}</p>
+                </div>
+                <div class="col-sm-6 text-sm-end">
+                    <p class="mb-1"><strong>Turma:</strong> {{ report.school_class.name }} ({{ report.school_class.grade }})</p>
+                    <p class="mb-1"><strong>Turno:</strong> {{ report.school_class.shift }}</p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-start">Disciplina</th>
+                            {% for p in report.periods %}
+                            <th>{{ p.name }}</th>
+                            {% endfor %}
+                            <th>Média Final</th>
+                            <th>Faltas</th>
+                            <th>Freq. %</th>
+                            <th>Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subj in report.subjects %}
+                        <tr>
+                            <td class="text-start fw-bold">{{ subj.subject.name }}</td>
+                            {% for p in report.periods %}
+                            <td>{{ subj.periods[p.id] if subj.periods[p.id] is not none else '-' }}</td>
+                            {% endfor %}
+                            <td class="fw-bold">{{ subj.final_average if subj.final_average is not none else '-' }}</td>
+                            <td>{{ subj.attendance.absent }}</td>
+                            <td>{{ subj.attendance.percentage }}%</td>
+                            <td>
+                                {% if subj.status == 'Aprovado' %}
+                                <span class="text-success">{{ subj.status }}</span>
+                                {% elif subj.status == 'Recuperação' %}
+                                <span class="text-warning">{{ subj.status }}</span>
+                                {% elif subj.status == 'Reprovado' %}
+                                <span class="text-danger">{{ subj.status }}</span>
+                                {% else %}
+                                {{ subj.status }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th class="text-start" colspan="{{ report.periods|length + 2 }}">Resumo Geral</th>
+                            <th>{{ report.attendance.absent }}</th>
+                            <th>{{ report.attendance.percentage }}%</th>
+                            <th>
+                                {% if report.final_status == 'Aprovado' %}
+                                <span class="badge bg-success">{{ report.final_status }}</span>
+                                {% elif 'Reprovado' in report.final_status %}
+                                <span class="badge bg-danger">{{ report.final_status }}</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">{{ report.final_status }}</span>
+                                {% endif %}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="row mt-5 pt-4 d-none d-print-flex text-center">
+                <div class="col-6">
+                    <hr class="w-75 mx-auto">
+                    <p class="mb-0">Assinatura da Coordenação</p>
+                </div>
+                <div class="col-6">
+                    <hr class="w-75 mx-auto">
+                    <p class="mb-0">Assinatura do Responsável</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Nenhuma matrícula ou dados acadêmicos encontrados para este ano letivo.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

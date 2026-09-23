@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2>Chamada - {{ school_class.name }}</h2>
+        <p class="text-muted mb-0">
+            <strong>Disciplina:</strong> {{ subject.name }} | 
+            <strong>Data:</strong> {{ date }} 
+            {% if period %}| <strong>Aula:</strong> {{ period }}{% endif %}
+        </p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-outline-success" onclick="markAll('presente')">Todos Presentes</button>
+        <button type="button" class="btn btn-outline-danger" onclick="markAll('ausente')">Todos Ausentes</button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <form method="POST">
+            {{ form.csrf_token }}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Aluno</th>
+                            <th style="width: 300px;">Status</th>
+                            <th>Justificativa (se aplicável)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in enrollments %}
+                        {% set sid = enrollment.student_id %}
+                        {% set att = existing.get(sid) %}
+                        {% set current_status = 'presente' if not att or att.present else ('justificado' if att.justification else 'ausente') %}
+                        <tr>
+                            <td>
+                                <strong>{{ enrollment.student.name }}</strong><br>
+                                <small class="text-muted">{{ enrollment.student.cpf }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ sid }}" id="presente_{{ sid }}" value="presente" autocomplete="off" {% if current_status == 'presente' %}checked{% endif %} onchange="toggleJustif({{ sid }})">
+                                    <label class="btn btn-outline-success" for="presente_{{ sid }}">Presente</label>
+
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ sid }}" id="ausente_{{ sid }}" value="ausente" autocomplete="off" {% if current_status == 'ausente' %}checked{% endif %} onchange="toggleJustif({{ sid }})">
+                                    <label class="btn btn-outline-danger" for="ausente_{{ sid }}">Ausente</label>
+
+                                    <input type="radio" class="btn-check status-radio" name="status_{{ sid }}" id="justificado_{{ sid }}" value="justificado" autocomplete="off" {% if current_status == 'justificado' %}checked{% endif %} onchange="toggleJustif({{ sid }})">
+                                    <label class="btn btn-outline-warning" for="justificado_{{ sid }}">Justificado</label>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="justification_{{ sid }}" id="justif_{{ sid }}" class="form-control" placeholder="Motivo da falta..." value="{{ att.justification if att and att.justification else '' }}" {% if current_status != 'justificado' %}disabled{% endif %}>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4">Nenhum aluno ativo matriculado nesta turma.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-end gap-2">
+                <a href="{{ url_for('attendance.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                {% if enrollments %}
+                {{ form.submit(class="btn btn-primary") }}
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleJustif(sid) {
+    const isJustified = document.getElementById('justificado_' + sid).checked;
+    const input = document.getElementById('justif_' + sid);
+    input.disabled = !isJustified;
+    if (!isJustified) input.value = '';
+}
+function markAll(status) {
+    const radios = document.querySelectorAll(`input[type="radio"][value="${status}"]`);
+    radios.forEach(radio => {
+        radio.checked = true;
+        // manually trigger the change event
+        const sid = radio.name.split('_')[1];
+        toggleJustif(sid);
+    });
+}
+</script>
+{% endblock %}

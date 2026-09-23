@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "components/form_macros.html" import render_field %}
+
+{% block title %}Transferir Matrícula - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.index') }}">Matrículas</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.detail', id=enrollment.id) }}">Detalhes</a></li>
+<li class="breadcrumb-item active">Transferir</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="mb-0">Transferir de Turma</h2>
+        </div>
+
+        <div class="alert alert-info">
+            Esta operação irá transferir o aluno <strong>{{ enrollment.student.full_name }}</strong> da turma atual (<strong>{{ enrollment.school_class.name }}</strong>) para uma nova turma do mesmo ano letivo (<strong>{{ enrollment.school_year.year }}</strong>). O histórico da turma atual será preservado.
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="row mb-4">
+                        <div class="col-md-12 mb-3">
+                            {{ render_field(form.new_class_id) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.transfer_date) }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ render_field(form.reason) }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end border-top pt-4 mt-2">
+                        <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-light me-2">Cancelar</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Funcionário: {{ employee.full_name }} - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('employees.index') }}">Funcionários</a></li>
+<li class="breadcrumb-item active">Perfil do Funcionário</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8 d-flex align-items-center">
+        <a href="{{ url_for('employees.index') }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar à lista">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">Perfil do Funcionário</h2>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        {% if can_edit %}
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear-fill me-1"></i> Ações
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="actionsDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('employees.edit', id=employee.id) }}"><i class="bi bi-pencil me-2 text-primary"></i>Editar Funcionário</a></li>
+                <li><hr class="dropdown-divider"></li>
+                
+                {% if employee.status == 'ativo' %}
+                    {% if current_user.has_permission('employees.deactivate') %}
+                    <li>
+                        <form method="POST" action="{{ url_for('employees.deactivate', id=employee.id) }}" onsubmit="return confirm('Deseja realmente desativar este funcionário?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-person-dash me-2"></i>Desativar</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                {% else %}
+                    {% if current_user.has_permission('employees.activate') %}
+                    <li>
+                        <form method="POST" action="{{ url_for('employees.activate', id=employee.id) }}" onsubmit="return confirm('Deseja reativar este funcionário?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="dropdown-item text-success"><i class="bi bi-person-check me-2"></i>Reativar</button>
+                        </form>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Esquerda: Resumo do Perfil -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 display-4 fw-bold" style="width: 120px; height: 120px;">
+                    {{ employee.full_name[:2].upper() }}
+                </div>
+                <h4 class="card-title fw-bold text-dark mb-1">{{ employee.full_name }}</h4>
+                <p class="text-muted mb-3">{{ employee.registration }}</p>
+                
+                <div class="mb-4">
+                    {% if employee.status == 'ativo' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-check-circle me-1"></i>Ativo</span>
+                    {% elif employee.status == 'inativo' %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-x-circle me-1"></i>Inativo</span>
+                    {% elif employee.status == 'afastado' %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill fs-6"><i class="bi bi-clock-history me-1"></i>Afastado</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill fs-6">{{ employee.status.title() }}</span>
+                    {% endif %}
+                </div>
+                
+                <ul class="list-group list-group-flush text-start">
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-briefcase text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Cargo</small>
+                            <span class="fw-medium">{{ employee.position or 'Não informado' }}</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-building text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Departamento</small>
+                            <span class="fw-medium">{{ employee.department or 'Não informado' }}</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0 py-3 d-flex align-items-center">
+                        <i class="bi bi-calendar-event text-muted fs-5 me-3"></i>
+                        <div>
+                            <small class="text-muted d-block">Membro desde</small>
+                            <span class="fw-medium">{{ employee.created_at.strftime('%d/%m/%Y') if employee.created_at else '-' }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Coluna Direita: Detalhes -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4 h-100">
+            <div class="card-header bg-white border-bottom pt-3 pb-3">
+                <h5 class="mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Detalhes do Funcionário</h5>
+            </div>
+            <div class="card-body p-4">
+                <h6 class="text-primary fw-bold text-uppercase mb-3">Informações de Contato</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">Telefone</label>
+                        <div class="fw-medium">{{ employee.phone or 'Não informado' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">E-mail</label>
+                        <div class="fw-medium">{{ employee.email or 'Não informado' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">CPF</label>
+                        <div class="fw-medium">
+                            {% if employee.cpf %}
+                                ***.{{ employee.cpf[3:6] }}.{{ employee.cpf[6:9] }}-**
+                            {% else %}
+                                Não informado
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">Data de Nascimento</label>
+                        <div class="fw-medium">{{ employee.birth_date.strftime('%d/%m/%Y') if employee.birth_date else 'Não informada' }}</div>
+                    </div>
+                </div>
+                
+                <h6 class="text-primary fw-bold text-uppercase mb-3 border-top pt-4">Endereço</h6>
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="text-muted small mb-1">Logradouro</label>
+                        <div class="fw-medium">
+                            {{ employee.address or 'Não informado' }}
+                            {% if employee.number %}, {{ employee.number }}{% endif %}
+                            {% if employee.complement %} - {{ employee.complement }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">Bairro</label>
+                        <div class="fw-medium">{{ employee.neighborhood or 'Não informado' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">CEP</label>
+                        <div class="fw-medium">{{ employee.zip_code or 'Não informado' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">Cidade</label>
+                        <div class="fw-medium">{{ employee.city or 'Não informada' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small mb-1">Estado (UF)</label>
+                        <div class="fw-medium">{{ employee.state or 'Não informado' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

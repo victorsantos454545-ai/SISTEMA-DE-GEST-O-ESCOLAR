@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2>Boletim Escolar</h2>
+        <p class="text-muted mb-0">
+            <strong>Aluno:</strong> {{ student.name }} | 
+            {% if report_data %}
+            <strong>Turma:</strong> {{ report_data.school_class.name }} | 
+            <strong>Ano Letivo:</strong> {{ report_data.enrollment.school_year.year }}
+            {% else %}
+            Sem matrícula ativa
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% if report_data %}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mb-0 text-center align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-start">Disciplina</th>
+                        {% for period in report_data.periods %}
+                        <th>{{ period.name }}</th>
+                        {% endfor %}
+                        <th>Média Final</th>
+                        <th>Situação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subj in report_data.subjects %}
+                    <tr>
+                        <td class="text-start fw-bold">{{ subj.subject.name }}</td>
+                        {% for period in report_data.periods %}
+                        <td>
+                            {% set val = subj.periods.get(period.id) %}
+                            {% if val is not none %}
+                                <span class="{% if val < 6.0 %}text-danger fw-bold{% endif %}">{{ val }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="fw-bold">
+                            {% if subj.final_average is not none %}
+                                <span class="{% if subj.final_average < 6.0 %}text-danger{% endif %}">{{ subj.final_average }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if subj.status == 'Aprovado' %}
+                                <span class="badge bg-success">Aprovado</span>
+                            {% elif subj.status == 'Recuperação' %}
+                                <span class="badge bg-warning text-dark">Recuperação</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ subj.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{{ report_data.periods|length + 3 }}">Nenhuma disciplina registrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    Não foi possível gerar o boletim (aluno sem matrícula ativa ou turma sem disciplinas).
+</div>
+{% endif %}
+{% endblock %}

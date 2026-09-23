@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Alunos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Alunos</h2>
+        {% if current_user.has_permission('students.create') %}
+        <a href="{{ url_for('students.create') }}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Novo Aluno
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('students.index') }}" class="row g-3">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Buscar por nome ou CPF...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="status">
+                        <option value="">Todos os status</option>
+                        <option value="ativo" {% if status == 'ativo' %}selected{% endif %}>Ativo</option>
+                        <option value="inativo" {% if status == 'inativo' %}selected{% endif %}>Inativo</option>
+                        <option value="transferido" {% if status == 'transferido' %}selected{% endif %}>Transferido</option>
+                        <option value="concluido" {% if status == 'concluido' %}selected{% endif %}>Concluído</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                        {% if query or status %}
+                        <a href="{{ url_for('students.index') }}" class="btn btn-outline-secondary w-100">Limpar</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Nascimento</th>
+                            <th>Turma Atual</th>
+                            <th>Responsável Principal</th>
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in pagination.items %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ student.social_name or student.full_name }}</div>
+                                {% if student.social_name %}
+                                <small class="text-muted">Civil: {{ student.full_name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ student.birth_date.strftime('%d/%m/%Y') if student.birth_date else '-' }}</td>
+                            <td>
+                                {% set active_enroll = student.enrollments.filter_by(status='ativa').first() %}
+                                {% if active_enroll %}
+                                    <span class="badge bg-info text-dark">{{ active_enroll.school_class.name }}</span>
+                                {% else %}
+                                    <span class="text-muted small">Sem turma ativa</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set primary = student.guardian_links.filter_by(is_primary=True).first() %}
+                                {% if primary %}
+                                    {{ primary.guardian.full_name }} <small class="text-muted">({{ primary.relationship }})</small>
+                                {% else %}
+                                    <span class="text-muted small">Não definido</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.status == 'ativo' %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% elif student.status == 'inativo' %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% elif student.status == 'transferido' %}
+                                    <span class="badge bg-warning text-dark">Transferido</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Concluído</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('students.detail', student_id=student.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if current_user.has_permission('students.edit') %}
+                                <a href="{{ url_for('students.edit', student_id=student.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            <div class="card-footer bg-white border-top-0 pt-4 pb-2">
+                <nav aria-label="Navegação de páginas">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('students.index', page=pagination.prev_num, q=query, status=status) if pagination.has_prev else '#' }}" tabindex="-1">Anterior</a>
+                        </li>
+                        
+                        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if p %}
+                                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('students.index', page=p, q=query, status=status) }}">{{ p }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('students.index', page=pagination.next_num, q=query, status=status) if pagination.has_next else '#' }}">Próxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            
+            {% else %}
+                <div class="py-5">
+                    {{ render_empty_state('Nenhum aluno encontrado.', 'people') }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

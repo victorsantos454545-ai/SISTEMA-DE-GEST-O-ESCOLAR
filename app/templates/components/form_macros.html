@@ -1,0 +1,20 @@
+{% macro render_field(field, icon=None) %}
+<div class="mb-3">
+    {{ field.label(class="form-label fw-bold") }}
+    <div class="{% if icon %}input-group{% endif %}">
+        {% if icon %}
+            <span class="input-group-text bg-white"><i class="bi bi-{{ icon }}"></i></span>
+        {% endif %}
+        {% if field.errors %}
+            {{ field(class="form-control is-invalid") }}
+            <div class="invalid-feedback">
+                {% for error in field.errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {{ field(class="form-select" if field.type == 'SelectField' else "form-control") }}
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}

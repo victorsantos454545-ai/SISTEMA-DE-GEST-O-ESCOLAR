@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "components/form_macros.html" import render_field %}
+
+{% block title %}{{ title }} - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('teachers.index') }}">Professores</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% if teacher %}{{ url_for('teachers.detail', id=teacher.id) }}{% else %}{{ url_for('teachers.index') }}{% endif %}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="mb-0">{{ title }}</h2>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <h5 class="text-primary border-bottom pb-2 mb-4">Dados Profissionais</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.registration) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.status) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.education) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.specialization) }}
+                        </div>
+                    </div>
+
+                    <h5 class="text-primary border-bottom pb-2 mb-4">Dados Pessoais</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-12 mb-3">
+                            {{ render_field(form.full_name) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.cpf) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.birth_date) }}
+                        </div>
+                    </div>
+                    
+                    <h5 class="text-primary border-bottom pb-2 mb-4">Contato</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.email) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.phone) }}
+                        </div>
+                    </div>
+                    
+                    <h5 class="text-primary border-bottom pb-2 mb-4">Endereço</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.zip_code) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.address) }}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            {{ render_field(form.number) }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.complement) }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.neighborhood) }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.city) }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.state) }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end border-top pt-4 mt-2">
+                        <a href="{% if teacher %}{{ url_for('teachers.detail', id=teacher.id) }}{% else %}{{ url_for('teachers.index') }}{% endif %}" class="btn btn-light me-2">Cancelar</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

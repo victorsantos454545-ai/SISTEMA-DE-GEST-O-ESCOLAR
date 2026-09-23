@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2>Frequência Escolar</h2>
+        <p class="text-muted mb-0">
+            <strong>Aluno:</strong> {{ student.name }} | 
+            <strong>Turma:</strong> {{ school_class.name }}
+        </p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center h-100">
+            <div class="card-body">
+                <h5 class="card-title">Aulas Dadas</h5>
+                <h2 class="display-4">{{ global_stat.total }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center h-100">
+            <div class="card-body">
+                <h5 class="card-title">Presenças</h5>
+                <h2 class="display-4">{{ global_stat.present + global_stat.justified }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white text-center h-100">
+            <div class="card-body">
+                <h5 class="card-title">Faltas</h5>
+                <h2 class="display-4">{{ global_stat.absent }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card {% if global_stat.percentage >= global_stat.min_perc %}bg-info{% else %}bg-warning{% endif %} text-white text-center h-100">
+            <div class="card-body">
+                <h5 class="card-title">Frequência Geral</h5>
+                <h2 class="display-4">{{ global_stat.percentage }}%</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Frequência por Disciplina</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Disciplina</th>
+                        <th class="text-center">Aulas</th>
+                        <th class="text-center">Presenças</th>
+                        <th class="text-center">Faltas</th>
+                        <th class="text-center">Justificadas</th>
+                        <th class="text-center">Frequência</th>
+                        <th>Situação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stats %}
+                    <tr>
+                        <td><strong>{{ item.subject.name }}</strong></td>
+                        <td class="text-center">{{ item.stats.total }}</td>
+                        <td class="text-center">{{ item.stats.present }}</td>
+                        <td class="text-center text-danger">{{ item.stats.absent }}</td>
+                        <td class="text-center text-warning">{{ item.stats.justified }}</td>
+                        <td class="text-center fw-bold">{{ item.stats.percentage }}%</td>
+                        <td>
+                            {% if item.stats.status == 'Abaixo do mínimo' %}
+                                <span class="badge bg-danger">Abaixo do mínimo</span>
+                            {% elif item.stats.status == 'Atenção' %}
+                                <span class="badge bg-warning text-dark">Atenção</span>
+                            {% elif item.stats.status == 'Sem dados suficientes' %}
+                                <span class="badge bg-secondary">Sem dados</span>
+                            {% else %}
+                                <span class="badge bg-success">Frequência Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">Nenhuma disciplina vinculada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if current_user.has_permission('attendance.edit') %}
+<div class="mt-4">
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Para auditar ou corrigir uma falta pontual deste aluno, busque o registro no banco histórico da turma ou entre em contato com a secretaria. O formulário de edição direta de histórico diário (por linha) será carregado na versão estendida do módulo.
+    </div>
+</div>
+{% endif %}
+{% endblock %}

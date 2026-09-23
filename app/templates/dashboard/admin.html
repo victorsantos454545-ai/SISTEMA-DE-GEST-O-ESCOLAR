@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% from 'components/stat_card.html' import render_stat_card %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Dashboard Administrativo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Visão Geral da Escola</h2>
+        <div class="text-muted small">
+            Atualizado em: {{ now().strftime('%d/%m/%Y %H:%M') if now else 'Agora' }}
+        </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Alunos', data.stats.total_students, 'people-fill', 'primary') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Professores', data.stats.total_teachers, 'person-badge-fill', 'success') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Turmas', data.stats.total_classes, 'collection-fill', 'warning') }}
+        </div>
+        <div class="col-xl-3 col-md-6">
+            {{ render_stat_card('Matrículas Ativas', data.stats.active_enrollments, 'check-circle-fill', 'info') }}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Gráfico de Alunos por Turma -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Alunos por Turma</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="alunosTurmaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas e Avisos -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm h-100 border-left-warning">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">Avisos Recentes</h6>
+                    <i class="bi bi-bell text-warning"></i>
+                </div>
+                <div class="card-body p-0">
+                    {% if announcements %}
+                        <div class="list-group list-group-flush">
+                            {% for ann in announcements %}
+                            <div class="list-group-item border-bottom">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 text-truncate" style="max-width: 70%">{{ ann.title }}</h6>
+                                    <small class="text-muted">{{ ann.published_at.strftime('%d/%m') if ann.published_at else '-' }}</small>
+                                </div>
+                                <p class="mb-1 small text-muted text-truncate">{{ ann.content | striptags }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhum aviso publicado.', 'megaphone') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Próximas Avaliações e Eventos -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Próximas Avaliações</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.upcoming_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Avaliação</th>
+                                        <th>Turma</th>
+                                        <th>Professor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ass in data.upcoming_assessments %}
+                                    <tr>
+                                        <td>{{ ass.date.strftime('%d/%m/%Y') }}</td>
+                                        <td><strong>{{ ass.title }}</strong><br><small class="text-muted">{{ ass.subject.name }}</small></td>
+                                        <td><span class="badge bg-secondary">{{ ass.school_class.name }}</span></td>
+                                        <td>{{ ass.teacher.full_name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Nenhuma avaliação próxima.', 'calendar-check') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Próximos Eventos</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.events %}
+                        <div class="list-group list-group-flush">
+                            {% for ev in data.events %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ ev.title }} <span class="badge bg-info ms-2">{{ ev.event_type | capitalize }}</span></h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i> {{ ev.start_datetime.strftime('%d/%m/%Y %H:%M') }}
+                                        {% if ev.location %}| <i class="bi bi-geo-alt me-1"></i> {{ ev.location }}{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ render_empty_state('Ainda não há eventos cadastrados.', 'calendar-event') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Carrega os dados do gráfico via AJAX
+        fetch("{{ url_for('main.api_admin_charts') }}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Erro ao carregar dados do gráfico:", data.error);
+                    return;
+                }
+                
+                const ctx = document.getElementById('alunosTurmaChart');
+                
+                if(data.labels.length === 0) {
+                    ctx.parentElement.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-bar-chart display-4 mb-3 opacity-50"></i><p>Sem dados de turmas para o gráfico.</p></div>';
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Qtd. de Alunos',
+                            data: data.data,
+                            backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                            borderColor: 'rgba(78, 115, 223, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error("Erro no fetch:", error));
+    });
+</script>
+{% endblock %}

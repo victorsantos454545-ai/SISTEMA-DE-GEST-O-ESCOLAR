@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Detalhes da Atividade</h2>
+    <div>
+        {% if current_user.has_permission('activities.edit') %}
+            <a href="{{ url_for('activities.edit', id=activity.id) }}" class="btn btn-primary">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            {% if activity.status != 'cancelada' %}
+            <a href="{{ url_for('activities.cancel', id=activity.id) }}" class="btn btn-warning">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+            </a>
+            {% endif %}
+        {% endif %}
+        <a href="{{ url_for('activities.index') }}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h3 class="card-title">{{ activity.title }}</h3>
+                <h6 class="card-subtitle mb-3 text-muted">{{ activity.activity_type }} | Prof. {{ activity.teacher.name }}</h6>
+                
+                <div class="mt-4">
+                    <h5>Descrição</h5>
+                    <div class="p-3 bg-light rounded">
+                        {{ activity.description | replace('\n', '<br>') | safe if activity.description else 'Sem descrição.' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Informações</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <strong>Status:</strong>
+                    {% if activity.status == 'rascunho' %}<span class="badge bg-secondary float-end">Rascunho</span>
+                    {% elif activity.status == 'publicada' %}<span class="badge bg-success float-end">Publicada</span>
+                    {% elif activity.status == 'encerrada' %}<span class="badge bg-dark float-end">Encerrada</span>
+                    {% elif activity.status == 'cancelada' %}<span class="badge bg-danger float-end">Cancelada</span>
+                    {% endif %}
+                </li>
+                <li class="list-group-item">
+                    <strong>Turma:</strong> <span class="float-end">{{ activity.school_class.name }}</span>
+                </li>
+                <li class="list-group-item">
+                    <strong>Disciplina:</strong> <span class="float-end">{{ activity.subject.name }}</span>
+                </li>
+                <li class="list-group-item">
+                    <strong>Publicação:</strong> <span class="float-end">{{ activity.published_at.strftime('%d/%m/%Y %H:%M') if activity.published_at else '-' }}</span>
+                </li>
+                <li class="list-group-item">
+                    <strong>Prazo:</strong> <span class="float-end">{{ activity.due_date.strftime('%d/%m/%Y %H:%M') if activity.due_date else '-' }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

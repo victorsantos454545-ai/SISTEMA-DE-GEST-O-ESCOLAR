@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Responsável{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">
+            <a href="{{ url_for('guardians.detail', guardian_id=guardian.id) }}" class="text-decoration-none text-muted me-2"><i class="bi bi-arrow-left"></i></a>
+            Editar Responsável: {{ guardian.full_name }}
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('guardians.edit', guardian_id=guardian.id) }}">
+                {% include 'guardians/_form.html' %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

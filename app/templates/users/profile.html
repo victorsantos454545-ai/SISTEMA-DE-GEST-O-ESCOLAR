@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil - {{ school_name }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+<li class="breadcrumb-item active">Meu Perfil</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Meu Perfil</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Nome de Usuario</div>
+                    <div class="col-sm-8">{{ user.username }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">E-mail</div>
+                    <div class="col-sm-8">{{ user.email }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Papel</div>
+                    <div class="col-sm-8"><span class="badge bg-secondary">{{ user.role.description or user.role.name }}</span></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Nome</div>
+                    <div class="col-sm-8">{{ user.display_name }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Data de Criacao</div>
+                    <div class="col-sm-8">{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else '-' }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Ultimo Login</div>
+                    <div class="col-sm-8">{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Nunca' }}</div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-key me-2"></i>Alterar Senha
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

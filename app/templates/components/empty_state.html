@@ -1,0 +1,9 @@
+{% macro render_empty_state(message, icon='inbox', action_url=None, action_text=None) %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-{{ icon }} display-4 mb-3 opacity-50"></i>
+    <p class="lead mb-0">{{ message }}</p>
+    {% if action_url and action_text %}
+        <a href="{{ action_url }}" class="btn btn-outline-primary mt-3">{{ action_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}

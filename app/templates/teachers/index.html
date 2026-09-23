@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Professores - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item active">Professores</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6 d-flex align-items-center">
+        <h2 class="mb-0"><i class="bi bi-person-workspace text-primary me-2"></i>Professores</h2>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        {% if current_user.has_permission('teachers.create') %}
+        <a href="{{ url_for('teachers.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Novo Professor
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body bg-light border-bottom">
+        <form method="GET" action="{{ url_for('teachers.index') }}" class="row g-3 align-items-end">
+            <div class="col-md-6 col-lg-5">
+                <label for="q" class="form-label text-muted small mb-1">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="q" name="q" value="{{ query }}" placeholder="Nome, Matrícula, CPF, Email...">
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <label for="status" class="form-label text-muted small mb-1">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="ativo" {% if status == 'ativo' %}selected{% endif %}>Ativo</option>
+                    <option value="inativo" {% if status == 'inativo' %}selected{% endif %}>Inativo</option>
+                    <option value="afastado" {% if status == 'afastado' %}selected{% endif %}>Afastado</option>
+                    <option value="desligado" {% if status == 'desligado' %}selected{% endif %}>Desligado</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-lg-4">
+                <button type="submit" class="btn btn-secondary w-100 w-md-auto">
+                    Filtrar
+                </button>
+                {% if query or status %}
+                <a href="{{ url_for('teachers.index') }}" class="btn btn-outline-secondary ms-1">Limpar</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Nome</th>
+                        <th>Matrícula</th>
+                        <th>Formação</th>
+                        <th>Contato</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in pagination.items %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar bg-primary-subtle text-primary rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;">
+                                    {{ teacher.full_name[:2].upper() }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ teacher.full_name }}</div>
+                                    {% if teacher.cpf %}
+                                    <div class="small text-muted">CPF: ***.{{ teacher.cpf[3:6] }}.{{ teacher.cpf[6:9] }}-**</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ teacher.registration }}</td>
+                        <td>
+                            <div class="small">{{ teacher.education or '-' }}</div>
+                            <div class="text-muted small">{{ teacher.specialization or '' }}</div>
+                        </td>
+                        <td>
+                            <div class="small"><i class="bi bi-telephone text-muted me-1"></i>{{ teacher.phone or '-' }}</div>
+                            <div class="small"><i class="bi bi-envelope text-muted me-1"></i>{{ teacher.email or '-' }}</div>
+                        </td>
+                        <td>
+                            {% if teacher.status == 'ativo' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Ativo</span>
+                            {% elif teacher.status == 'inativo' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Inativo</span>
+                            {% elif teacher.status == 'afastado' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Afastado</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">{{ teacher.status.title() }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('teachers.detail', id=teacher.id) }}" class="btn btn-sm btn-outline-primary rounded-circle" title="Visualizar Detalhes" aria-label="Visualizar">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            {% include 'components/empty_state.html' %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer bg-white py-3">
+        <nav aria-label="Navegação de páginas">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('teachers.index', page=pagination.prev_num, q=query, status=status) if pagination.has_prev else '#' }}" tabindex="-1">Anterior</a>
+                </li>
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('teachers.index', page=page_num, q=query, status=status) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('teachers.index', page=pagination.next_num, q=query, status=status) if pagination.has_next else '#' }}">Próxima</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="text-center mt-2 text-muted small">
+            Página {{ pagination.page }} de {{ pagination.pages }} (Total: {{ pagination.total }} professores)
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

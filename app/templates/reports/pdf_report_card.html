@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Boletim Escolar - {{ report.student.full_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; font-size: 20px; }
+        .header h2 { margin: 5px 0 0 0; font-size: 16px; font-weight: normal; color: #555; }
+        .info-section { width: 100%; margin-bottom: 20px; display: table; }
+        .info-col { display: table-cell; width: 50%; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+        th { background-color: #eee; }
+        .text-left { text-align: left; }
+        .signatures { margin-top: 50px; width: 100%; display: table; text-align: center; }
+        .sig-col { display: table-cell; width: 50%; }
+        .line { border-top: 1px solid #000; width: 80%; margin: 0 auto 5px auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ESCOLA MODELO</h1>
+        <h2>Boletim Escolar - Ano Letivo {{ report.enrollment.school_year.year }}</h2>
+    </div>
+
+    <div class="info-section">
+        <div class="info-col">
+            <p><strong>Aluno:</strong> {{ report.student.full_name }}</p>
+            <p><strong>Matrícula:</strong> {{ report.student.cpf }}</p>
+        </div>
+        <div class="info-col" style="text-align: right;">
+            <p><strong>Turma:</strong> {{ report.school_class.name }} ({{ report.school_class.grade }})</p>
+            <p><strong>Turno:</strong> {{ report.school_class.shift }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-left">Disciplina</th>
+                {% for p in report.periods %}
+                <th>{{ p.name }}</th>
+                {% endfor %}
+                <th>Média Final</th>
+                <th>Faltas</th>
+                <th>Freq. %</th>
+                <th>Situação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subj in report.subjects %}
+            <tr>
+                <td class="text-left"><strong>{{ subj.subject.name }}</strong></td>
+                {% for p in report.periods %}
+                <td>{{ subj.periods[p.id] if subj.periods[p.id] is not none else '-' }}</td>
+                {% endfor %}
+                <td><strong>{{ subj.final_average if subj.final_average is not none else '-' }}</strong></td>
+                <td>{{ subj.attendance.absent }}</td>
+                <td>{{ subj.attendance.percentage }}%</td>
+                <td>{{ subj.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th class="text-left" colspan="{{ report.periods|length + 2 }}">Resumo Geral</th>
+                <th>{{ report.attendance.absent }}</th>
+                <th>{{ report.attendance.percentage }}%</th>
+                <th>{{ report.final_status }}</th>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="signatures">
+        <div class="sig-col">
+            <div class="line"></div>
+            Coordenação
+        </div>
+        <div class="sig-col">
+            <div class="line"></div>
+            Responsável
+        </div>
+    </div>
+</body>
+</html>

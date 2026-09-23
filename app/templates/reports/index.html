@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Central de Relatórios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Central de Relatórios</h1>
+        <p class="text-muted mb-0">Selecione o relatório que deseja consultar, imprimir ou exportar.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Alunos -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card shadow-sm h-100 py-2 border-left-primary">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Categoria: Alunos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Lista de Alunos</div>
+                            <p class="text-muted small mt-2">Gere relatórios de alunos ativos, inativos, filtrados por turma e mais.</p>
+                            <a href="{{ url_for('reports.students_report') }}" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-file-earmark-text"></i> Acessar Relatório
+                            </a>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acadêmico / Notas -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card shadow-sm h-100 py-2 border-left-success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Categoria: Acadêmico
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Boletim Escolar</div>
+                            <p class="text-muted small mt-2">Consulte e imprima o boletim acadêmico com notas, frequência e situação final.</p>
+                            
+                            <form action="{{ url_for('reports.report_card', student_id=0) }}" method="GET" class="mt-2" id="form-boletim">
+                                <div class="input-group input-group-sm">
+                                    <input type="number" name="student_id_input" id="student_id_input" class="form-control" placeholder="ID do Aluno" required>
+                                    <button class="btn btn-outline-success" type="submit" onclick="this.form.action='/relatorios/boletim/'+document.getElementById('student_id_input').value">
+                                        <i class="bi bi-search"></i> Acessar
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-journal-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

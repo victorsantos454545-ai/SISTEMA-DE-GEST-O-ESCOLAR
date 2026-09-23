@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "components/form_macros.html" import render_field %}
+
+{% block title %}Renovar Matrícula - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.index') }}">Matrículas</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('enrollments.detail', id=enrollment.id) }}">Detalhes</a></li>
+<li class="breadcrumb-item active">Renovar</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="mb-0">Renovar Matrícula</h2>
+        </div>
+
+        <div class="alert alert-info">
+            Este processo criará uma <strong>nova matrícula</strong> para o aluno <strong>{{ enrollment.student.full_name }}</strong> em um novo ano letivo. A matrícula atual continuará intacta para preservar o histórico.
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" novalidate id="renewForm">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.new_year_id) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.new_class_id) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.renew_date) }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ render_field(form.status) }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            {{ render_field(form.notes) }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end border-top pt-4 mt-2">
+                        <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-light me-2">Cancelar</a>
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const yearSelect = document.getElementById('new_year_id');
+        if (yearSelect) {
+            yearSelect.addEventListener('change', function() {
+                // Submete o formulário via GET para atualizar a lista de turmas
+                document.getElementById('renewForm').submit();
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cls.name }} - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('classes.index') }}">Turmas</a></li>
+<li class="breadcrumb-item active">{{ cls.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8 d-flex align-items-center">
+        <a href="{{ url_for('classes.index') }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0 me-3">{{ cls.name }}</h2>
+        {% if cls.status == 'ativa' %}
+            <span class="badge bg-success fs-6">Ativa</span>
+        {% elif cls.status == 'inativa' %}
+            <span class="badge bg-warning text-dark fs-6">Inativa</span>
+        {% else %}
+            <span class="badge bg-secondary fs-6">Encerrada</span>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div>
+            {% if current_user.has_permission('grades.view') %}
+            <a href="{{ url_for('academic.class_performance', class_id=cls.id) }}" class="btn btn-primary me-2">
+                <i class="bi bi-bar-chart me-1"></i> Desempenho
+            </a>
+            {% endif %}
+            {% if current_user.has_permission('schedules.view') %}
+            <a href="{{ url_for('schedules.class_schedule', class_id=cls.id) }}" class="btn btn-info text-white me-2">
+                <i class="bi bi-clock"></i> Horários
+            </a>
+            {% endif %}
+            {% if can_edit %}
+            <a href="{{ url_for('classes.edit', id=cls.id) }}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Editar
+            </a>
+            {% if cls.status == 'ativa' %}
+            <form action="{{ url_for('classes.deactivate', id=cls.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-warning" onclick="return confirm('Deseja realmente desativar esta turma?')">
+                    <i class="bi bi-pause-circle me-1"></i> Desativar
+                </button>
+            </form>
+            {% else %}
+            <form action="{{ url_for('classes.activate', id=cls.id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-success" onclick="return confirm('Deseja reativar esta turma?')">
+                    <i class="bi bi-play-circle me-1"></i> Ativar
+                </button>
+            </form>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Principal (Dados e Resumo) -->
+    <div class="col-lg-4 mb-4">
+        <!-- Card de Informações -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Ano Letivo</span>
+                        <span class="fw-medium">{{ cls.school_year.year }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Série</span>
+                        <span class="fw-medium">{{ cls.grade or '-' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Turno</span>
+                        <span class="fw-medium">{{ cls.shift }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Sala</span>
+                        <span class="fw-medium">{{ cls.room or '-' }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Card de Ocupação -->
+        <div class="card shadow-sm border-{{ 'danger' if available == 0 else 'success' }}">
+            <div class="card-body text-center py-4">
+                <h5 class="text-muted mb-3">Ocupação da Turma</h5>
+                <div class="display-4 fw-bold text-{{ 'danger' if available == 0 else 'primary' }} mb-2">{{ enrolled }}<span class="fs-4 text-muted">/{{ cls.capacity or 0 }}</span></div>
+                
+                <div class="progress mt-3 mb-2" style="height: 10px;">
+                    <div class="progress-bar bg-{{ 'danger' if occupancy >= 100 else 'success' }}" role="progressbar" style="width: {{ occupancy }}%;" aria-valuenow="{{ occupancy }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                
+                <p class="mb-0 text-muted">
+                    {% if available > 0 %}
+                    <span class="text-success fw-bold">{{ available }} vagas</span> disponíveis
+                    {% else %}
+                    <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> Turma Lotada</span>
+                    {% endif %}
+                </p>
+                <p class="small text-muted mb-0">Ocupação: {{ "%.1f"|format(occupancy) }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Detalhes em Abas -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white pt-3 pb-0">
+                <ul class="nav nav-tabs card-header-tabs" id="classTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="professors-tab" data-bs-toggle="tab" data-bs-target="#professors" type="button" role="tab" aria-controls="professors" aria-selected="true">
+                            <i class="bi bi-person-badge me-1"></i> Professores
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab" aria-controls="subjects" aria-selected="false">
+                            <i class="bi bi-book me-1"></i> Disciplinas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false">
+                            <i class="bi bi-people me-1"></i> Alunos
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body">
+                <div class="tab-content" id="classTabsContent">
+                    
+                    <!-- Aba Professores -->
+                    <div class="tab-pane fade show active" id="professors" role="tabpanel" aria-labelledby="professors-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Professores da Turma</h5>
+                            {% if can_manage_teachers %}
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linkTeacherModal">
+                                <i class="bi bi-plus"></i> Vincular Professor
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if cls.teacher_links.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Matrícula</th>
+                                        <th>Papel</th>
+                                        {% if can_manage_teachers %}
+                                        <th class="text-end">Ações</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in cls.teacher_links %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('teachers.detail', id=link.teacher.id) }}" class="text-decoration-none">
+                                                {{ link.teacher.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ link.teacher.registration }}</td>
+                                        <td>
+                                            {% if link.is_coordinator %}
+                                            <span class="badge bg-primary">Coordenador</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Professor</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if can_manage_teachers %}
+                                        <td class="text-end">
+                                            <form action="{{ url_for('classes.unlink_teacher', id=cls.id, teacher_id=link.teacher.id) }}" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Desvincular professor desta turma?')" title="Desvincular">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+                            Nenhum professor vinculado.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Aba Disciplinas -->
+                    <div class="tab-pane fade" id="subjects" role="tabpanel" aria-labelledby="subjects-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Disciplinas da Turma</h5>
+                            {% if can_manage_subjects %}
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linkSubjectModal">
+                                <i class="bi bi-plus"></i> Vincular Disciplina
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if cls.subject_links.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Disciplina</th>
+                                        <th>Código</th>
+                                        <th>Carga Horária (Turma)</th>
+                                        {% if can_manage_subjects %}
+                                        <th class="text-end">Ações</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in cls.subject_links %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('subjects.detail', id=link.subject.id) }}" class="text-decoration-none">
+                                                {{ link.subject.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ link.subject.code or '-' }}</td>
+                                        <td>
+                                            {% if link.workload %}
+                                                {{ link.workload }}h
+                                            {% else %}
+                                                <span class="text-muted">{{ link.subject.workload or 0 }}h (Padrão)</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if can_manage_subjects %}
+                                        <td class="text-end">
+                                            <form action="{{ url_for('classes.unlink_subject', id=cls.id, subject_id=link.subject.id) }}" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Desvincular disciplina desta turma?')" title="Desvincular">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-book-half fs-1 d-block mb-2"></i>
+                            Nenhuma disciplina vinculada.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Aba Alunos -->
+                    <div class="tab-pane fade" id="students" role="tabpanel" aria-labelledby="students-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Alunos Matriculados</h5>
+                            {% if current_user.has_permission('enrollments.create') and cls.status != 'encerrada' %}
+                            <a href="{{ url_for('enrollments.create', class_id=cls.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-person-plus me-1"></i>Matricular Aluno
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        {% if cls.enrollments.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nome do Aluno</th>
+                                        <th>Matrícula</th>
+                                        <th>Status da Matrícula</th>
+                                        <th>Data</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for enrollment in cls.enrollments %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('students.detail', student_id=enrollment.student.id) }}" class="text-decoration-none">
+                                                {{ enrollment.student.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ enrollment.student.cpf or "-" }}</td>
+                                        <td>
+                                            {% if enrollment.status == 'ativa' %}
+                                            <span class="badge bg-success">Ativa</span>
+                                            {% elif enrollment.status == 'pendente' %}
+                                            <span class="badge bg-warning text-dark">Pendente</span>
+                                            {% elif enrollment.status == 'transferida' %}
+                                            <span class="badge bg-info text-dark">Transferida</span>
+                                            {% elif enrollment.status == 'concluida' %}
+                                            <span class="badge bg-primary">Concluída</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Cancelada</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ enrollment.enrollment_date.strftime('%d/%m/%Y') if enrollment.enrollment_date else '-' }}</td>
+                                        <td class="text-end">
+                                            {% if current_user.has_permission('enrollments.view') %}
+                                            <a href="{{ url_for('enrollments.detail', id=enrollment.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver Matrícula"><i class="bi bi-eye"></i></a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2"></i>
+                            Nenhum aluno matriculado nesta turma.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Vincular Professor -->
+{% if can_manage_teachers %}
+<div class="modal fade" id="linkTeacherModal" tabindex="-1" aria-labelledby="linkTeacherModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('classes.link_teacher', id=cls.id) }}" method="POST">
+                {{ teacher_form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="linkTeacherModalLabel">Vincular Professor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ teacher_form.teacher_id.label(class="form-label") }}
+                        {{ teacher_form.teacher_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ teacher_form.is_coordinator(class="form-check-input") }}
+                        {{ teacher_form.is_coordinator.label(class="form-check-label") }}
+                        <div class="form-text">Marcá-lo como coordenador removerá este papel de outro professor caso já exista na turma.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    {{ teacher_form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Vincular Disciplina -->
+{% if can_manage_subjects %}
+<div class="modal fade" id="linkSubjectModal" tabindex="-1" aria-labelledby="linkSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('classes.link_subject', id=cls.id) }}" method="POST">
+                {{ subject_form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="linkSubjectModalLabel">Vincular Disciplina</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ subject_form.subject_id.label(class="form-label") }}
+                        {{ subject_form.subject_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ subject_form.workload.label(class="form-label") }}
+                        {{ subject_form.workload(class="form-control", placeholder="Deixe em branco para usar o padrão da disciplina") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    {{ subject_form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

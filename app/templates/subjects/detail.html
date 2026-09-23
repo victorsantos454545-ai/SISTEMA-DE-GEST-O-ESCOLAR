@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} - {{ school_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Início</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('subjects.index') }}">Disciplinas</a></li>
+<li class="breadcrumb-item active">{{ subject.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8 d-flex align-items-center">
+        <a href="{{ url_for('subjects.index') }}" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" title="Voltar">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0 me-3">{{ subject.name }}</h2>
+        {% if subject.status == 'ativa' %}
+            <span class="badge bg-success fs-6">Ativa</span>
+        {% else %}
+            <span class="badge bg-warning text-dark fs-6">Inativa</span>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        {% if can_edit %}
+        <a href="{{ url_for('subjects.edit', id=subject.id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i> Editar
+        </a>
+        {% if subject.status == 'ativa' %}
+        <form action="{{ url_for('subjects.deactivate', id=subject.id) }}" method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-warning" onclick="return confirm('Deseja realmente desativar esta disciplina?')">
+                <i class="bi bi-pause-circle me-1"></i> Desativar
+            </button>
+        </form>
+        {% else %}
+        <form action="{{ url_for('subjects.activate', id=subject.id) }}" method="POST" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-success" onclick="return confirm('Deseja reativar esta disciplina?')">
+                <i class="bi bi-play-circle me-1"></i> Ativar
+            </button>
+        </form>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Principal (Dados) -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Código</span>
+                        <span class="fw-medium">{{ subject.code or '-' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Carga Horária Base</span>
+                        <span class="fw-medium">{{ subject.workload or 0 }}h</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Turmas Vinculadas</span>
+                        <span class="fw-medium">{{ subject.class_links.count() }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Professores Habilitados</span>
+                        <span class="fw-medium">{{ subject.teachers.count() }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if subject.description %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Descrição</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0 text-muted">{{ subject.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Coluna Detalhes em Abas -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white pt-3 pb-0">
+                <ul class="nav nav-tabs card-header-tabs" id="subjectTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes" type="button" role="tab" aria-controls="classes" aria-selected="true">
+                            <i class="bi bi-collection me-1"></i> Turmas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button" role="tab" aria-controls="teachers" aria-selected="false">
+                            <i class="bi bi-person-badge me-1"></i> Professores Habilitados
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body">
+                <div class="tab-content" id="subjectTabsContent">
+                    
+                    <!-- Aba Turmas -->
+                    <div class="tab-pane fade show active" id="classes" role="tabpanel" aria-labelledby="classes-tab">
+                        <h5 class="mb-3">Turmas com esta Disciplina</h5>
+                        
+                        {% if subject.class_links.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Turma</th>
+                                        <th>Ano Letivo</th>
+                                        <th>Turno</th>
+                                        <th>Carga Horária (Turma)</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in subject.class_links %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('classes.detail', id=link.school_class.id) }}" class="text-decoration-none">
+                                                {{ link.school_class.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ link.school_class.school_year.year }}</td>
+                                        <td>{{ link.school_class.shift }}</td>
+                                        <td>
+                                            {% if link.workload %}
+                                                {{ link.workload }}h
+                                            {% else %}
+                                                <span class="text-muted">{{ subject.workload or 0 }}h (Padrão)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if link.school_class.status == 'ativa' %}
+                                            <span class="badge bg-success">Ativa</span>
+                                            {% elif link.school_class.status == 'inativa' %}
+                                            <span class="badge bg-warning text-dark">Inativa</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Encerrada</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-collection fs-1 d-block mb-2"></i>
+                            Nenhuma turma vinculada a esta disciplina.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Aba Professores -->
+                    <div class="tab-pane fade" id="teachers" role="tabpanel" aria-labelledby="teachers-tab">
+                        <h5 class="mb-3">Professores Habilitados</h5>
+                        
+                        {% if subject.teachers.count() > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Professor</th>
+                                        <th>Matrícula</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for teacher in subject.teachers %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('teachers.detail', id=teacher.id) }}" class="text-decoration-none">
+                                                {{ teacher.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ teacher.registration }}</td>
+                                        <td>
+                                            {% if teacher.status == 'ativo' %}
+                                            <span class="badge bg-success">Ativo</span>
+                                            {% else %}
+                                            <span class="badge bg-warning text-dark">Inativo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+                            Nenhum professor habilitado nesta disciplina.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Horário{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Grade de Horários - {{ teacher.full_name }}</h2>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 10%;">Horário</th>
+                            {% for day in days %}
+                                <th>{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if grid %}
+                            {% for time_slot, row_days in grid.items() %}
+                            <tr>
+                                <td class="align-middle fw-bold bg-light">{{ time_slot }}</td>
+                                {% for day in days %}
+                                    <td class="align-top">
+                                        {% if row_days[day] %}
+                                            {% for sch in row_days[day] %}
+                                                <div class="card bg-white shadow-sm mb-2 border-start border-success border-3">
+                                                    <div class="card-body p-2 text-start">
+                                                        <h6 class="mb-1 fw-bold">{{ sch.subject.name }}</h6>
+                                                        <small class="text-muted d-block"><i class="bi bi-people"></i> Turma: {{ sch.school_class.name }}</small>
+                                                        {% if sch.room %}
+                                                        <small class="text-muted d-block"><i class="bi bi-geo-alt"></i> Sala: {{ sch.room }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+                                    Você não possui horários cadastrados.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

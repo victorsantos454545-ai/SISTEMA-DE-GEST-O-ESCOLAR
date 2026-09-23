@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from 'components/empty_state.html' import render_empty_state %}
+
+{% block title %}Responsáveis{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">Responsáveis</h2>
+        {% if current_user.has_permission('guardians.create') %}
+        <a href="{{ url_for('guardians.create') }}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Novo Responsável
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('guardians.index') }}" class="row g-3">
+                <div class="col-md-9">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Buscar por nome ou CPF...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-primary w-100">Pesquisar</button>
+                        {% if query %}
+                        <a href="{{ url_for('guardians.index') }}" class="btn btn-outline-secondary w-100">Limpar</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if pagination.items %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Contato</th>
+                            <th>Alunos Vinculados</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guardian in pagination.items %}
+                        <tr>
+                            <td><div class="fw-bold">{{ guardian.full_name }}</div></td>
+                            <td>{{ guardian.cpf or '-' }}</td>
+                            <td>
+                                <div><i class="bi bi-telephone text-muted"></i> {{ guardian.phone or '-' }}</div>
+                                {% if guardian.email %}
+                                <div><small><i class="bi bi-envelope text-muted"></i> {{ guardian.email }}</small></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark rounded-pill">{{ guardian.student_links.count() }}</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('guardians.detail', guardian_id=guardian.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if current_user.has_permission('guardians.edit') %}
+                                <a href="{{ url_for('guardians.edit', guardian_id=guardian.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            <div class="card-footer bg-white border-top-0 pt-4 pb-2">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('guardians.index', page=pagination.prev_num, q=query) if pagination.has_prev else '#' }}">Anterior</a>
+                        </li>
+                        
+                        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if p %}
+                                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('guardians.index', page=p, q=query) }}">{{ p }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('guardians.index', page=pagination.next_num, q=query) if pagination.has_next else '#' }}">Próxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            
+            {% else %}
+                <div class="py-5">
+                    {{ render_empty_state('Nenhum responsável encontrado.', 'people') }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

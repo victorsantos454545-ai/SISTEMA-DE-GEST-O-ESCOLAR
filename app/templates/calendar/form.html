@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-gray-800">{{ title }}</h2>
+        <a href="{{ url_for('calendar.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                        {% for error in form.title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.event_type.label(class="form-label") }}
+                        {{ form.event_type(class="form-select" + (" is-invalid" if form.event_type.errors else "")) }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows=3) }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        {{ form.start_datetime.label(class="form-label") }}
+                        {{ form.start_datetime(class="form-control" + (" is-invalid" if form.start_datetime.errors else "")) }}
+                        {% for error in form.start_datetime.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.end_datetime.label(class="form-label") }}
+                        {{ form.end_datetime(class="form-control" + (" is-invalid" if form.end_datetime.errors else "")) }}
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end pb-2">
+                        <div class="form-check form-switch">
+                            {{ form.all_day(class="form-check-input") }}
+                            {{ form.all_day.label(class="form-check-label") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control") }}
+                    </div>
+                </div>
+
+                <hr>
+                <h5 class="mb-3">Vínculos (Opcionais)</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        {{ form.school_year_id.label(class="form-label") }}
+                        {{ form.school_year_id(class="form-select") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.school_class_id.label(class="form-label") }}
+                        {{ form.school_class_id(class="form-select") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.subject_id.label(class="form-label") }}
+                        {{ form.subject_id(class="form-select") }}
+                    </div>
+                </div>
+
+                <hr>
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        {{ form.status.label(class="form-label") }}
+                        {{ form.status(class="form-select") }}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('calendar.index') }}" class="btn btn-light">Cancelar</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
