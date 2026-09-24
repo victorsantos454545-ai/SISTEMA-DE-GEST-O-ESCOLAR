@@ -3,7 +3,7 @@ import io
 try:
     import openpyxl
     import weasyprint
-except ImportError:
+except Exception:
     openpyxl = None
     weasyprint = None
 
