@@ -57,7 +57,12 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Configuração de produção."""
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    _db_url = os.environ.get('DATABASE_URL')
+    if _db_url and _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+    elif _db_url and _db_url.startswith('postgresql://'):
+        _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+    SQLALCHEMY_DATABASE_URI = _db_url
     # Em produção com HTTPS, habilitar cookie seguro
     SESSION_COOKIE_SECURE = True
 
