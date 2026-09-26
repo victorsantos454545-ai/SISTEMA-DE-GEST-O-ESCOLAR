@@ -76,6 +76,8 @@ def edit(id):
         abort(403)
         
     form = TeacherForm(obj=teacher, teacher_id=teacher.id)
+    if request.method == 'GET' and teacher.user:
+        form.username.data = teacher.user.username
     
     if form.validate_on_submit():
         data = {k: v for k, v in form.data.items() if k != 'submit' and k != 'csrf_token'}

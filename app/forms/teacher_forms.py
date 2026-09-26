@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateField, SelectField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, Optional, ValidationError
+from wtforms import StringField, DateField, SelectField, SubmitField, PasswordField
+from wtforms.validators import DataRequired, Email, Length, Optional, ValidationError, EqualTo
 from app.models.teacher import Teacher
+from app.models.user import User
 import re
 
 def validate_cpf(form, field):
@@ -57,7 +58,24 @@ def check_duplicate_registration(form, field):
             return
         raise ValidationError('Já existe um professor cadastrado com esta matrícula.')
 
+def check_duplicate_username(form, field):
+    username = field.data
+    if not username:
+        return
+    user = User.query.filter_by(username=username).first()
+    if user:
+        if hasattr(form, 'teacher_id') and form.teacher_id:
+            teacher = Teacher.query.get(form.teacher_id)
+            if teacher and teacher.user_id == user.id:
+                return
+        raise ValidationError('Este nome de usuário já está em uso.')
+
 class TeacherForm(FlaskForm):
+    # Acesso ao Sistema (Login)
+    username = StringField('Usuário de Acesso (Login)', validators=[Optional(), Length(min=3, max=80, message="Usuário deve ter entre 3 e 80 caracteres."), check_duplicate_username])
+    password = PasswordField('Senha de Acesso', validators=[Optional(), Length(min=6, message="A senha deve ter no mínimo 6 caracteres.")])
+    confirm_password = PasswordField('Confirmar Senha', validators=[EqualTo('password', message="As senhas não coincidem.")])
+
     # Dados pessoais
     full_name = StringField('Nome Completo', validators=[DataRequired(message="Campo obrigatório."), Length(max=200)])
     cpf = StringField('CPF', validators=[Optional(), validate_cpf, check_duplicate_cpf, Length(max=14)])

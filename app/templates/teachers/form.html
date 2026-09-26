@@ -63,6 +63,21 @@
                         </div>
                     </div>
                     
+                    <h5 class="text-primary border-bottom pb-2 mb-4">Acesso ao Sistema (Login)</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.username, icon="person") }}
+                            <small class="text-muted d-block mt-1">Deixe em branco para gerar a partir do nome/e-mail.</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.password, icon="key") }}
+                            {% if teacher %}<small class="text-muted d-block mt-1">Deixe em branco para manter a senha atual.</small>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ render_field(form.confirm_password, icon="key-fill") }}
+                        </div>
+                    </div>
+                    
                     <h5 class="text-primary border-bottom pb-2 mb-4">Endereço</h5>
                     <div class="row mb-4">
                         <div class="col-md-4 mb-3">

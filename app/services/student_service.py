@@ -32,6 +32,8 @@ def can_view_student(user, student):
         
         teacher_classes = ClassTeacher.query.filter_by(teacher_id=teacher_id).all()
         class_ids = [tc.class_id for tc in teacher_classes]
+        if not class_ids:
+            return False
         
         enrollment = Enrollment.query.filter(
             Enrollment.student_id == student.id,

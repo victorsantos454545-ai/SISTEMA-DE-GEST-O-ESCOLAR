@@ -65,7 +65,43 @@ class TestTeacherModule:
         # Test Search
         resp_search = client.get('/professores/?q=Silva')
         assert b'Prof Silva Editado' in resp_search.data
+
+    def test_teacher_custom_password_and_login(self, client, seeded_app):
+        """Verifica se o admin pode escolher a senha do professor e ele consegue logar."""
+        with seeded_app.app_context():
+            create_user_env('admin', 'admin_pwd_test')
+            
+        _login(client, 'admin_pwd_test')
         
+        # Cadastra professor com senha escolhida pelo admin
+        resp = client.post('/professores/novo', data={
+            'full_name': 'Professor Roberto Carlos',
+            'registration': 'ROB123',
+            'status': 'ativo',
+            'username': 'roberto.carlos',
+            'password': 'senhaEscolhidaPeloAdmin123',
+            'confirm_password': 'senhaEscolhidaPeloAdmin123'
+        }, follow_redirects=True)
+        assert b'Professor cadastrado com sucesso.' in resp.data
+        
+        # Desloga admin
+        client.get('/logout', follow_redirects=True)
+        
+        # Tenta logar com o novo professor usando a senha escolhida
+        resp_login = _login(client, 'roberto.carlos', 'senhaEscolhidaPeloAdmin123')
+        assert resp_login.status_code == 200
+        # Verifica que o professor entrou na sessão autenticada
+        with client.session_transaction() as sess:
+            assert '_user_id' in sess
+            
+        with seeded_app.app_context():
+            u = User.query.filter_by(username='roberto.carlos').first()
+            assert u is not None
+            assert u.role.name == 'professor'
+            assert u.teacher_profile is not None
+            assert u.teacher_profile.registration == 'ROB123'
+            assert u.name == 'Professor Roberto Carlos'
+
     def test_teacher_subject_class_links(self, client, seeded_app):
         with seeded_app.app_context():
             create_user_env('admin', 'admin_link')

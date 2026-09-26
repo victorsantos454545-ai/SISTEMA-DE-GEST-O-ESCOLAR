@@ -35,5 +35,10 @@ class Employee(TimestampMixin, db.Model):
     # Relacionamentos
     user = db.relationship('User', backref=db.backref('employee_profile', uselist=False))
 
+    @property
+    def name(self):
+        """Retorna o nome completo do funcionário."""
+        return self.full_name
+
     def __repr__(self):
         return f'<Employee {self.full_name}>'

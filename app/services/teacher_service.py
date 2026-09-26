@@ -2,6 +2,8 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.models.teacher import Teacher
 from app.models.class_teacher import ClassTeacher
+from app.models.user import User
+from app.models.role import Role
 from app.services.audit_service import log_action
 import re
 
@@ -48,20 +50,104 @@ def search_teachers(query=None, status=None, page=1, per_page=20):
     base_query = base_query.order_by(Teacher.full_name.asc())
     return base_query.paginate(page=page, per_page=per_page, error_out=False)
 
+def _generate_teacher_username(full_name, email):
+    """Gera um nome de usuário único para o professor."""
+    if email and '@' in email:
+        base = email.split('@')[0].strip().lower()
+    else:
+        parts = [p.lower() for p in re.findall(r'[a-zA-Z0-9]+', full_name)]
+        if len(parts) >= 2:
+            base = f"{parts[0]}.{parts[-1]}"
+        elif parts:
+            base = parts[0]
+        else:
+            base = "professor"
+    
+    base = re.sub(r'[^a-z0-9_.]', '', base) or 'professor'
+    username = base
+    counter = 1
+    while User.query.filter_by(username=username).first():
+        username = f"{base}{counter}"
+        counter += 1
+    return username
+
 def create_teacher(data):
+    username = data.pop('username', None)
+    password = data.pop('password', None)
+    data.pop('confirm_password', None)
+
     if data.get('cpf'):
         data['cpf'] = re.sub(r'[^0-9]', '', data['cpf'])
 
+    # 1. Localizar ou obter o papel de professor
+    role_prof = Role.query.filter_by(name='professor').first()
+    if not role_prof:
+        from app.services.seed_service import seed_roles
+        seed_roles()
+        role_prof = Role.query.filter_by(name='professor').first()
+
+    # 2. Criar conta de usuário de acesso
+    email = data.get('email')
+    if not username:
+        username = _generate_teacher_username(data.get('full_name', ''), email)
+
+    if not password:
+        password = 'professor01'
+
+    user = User(
+        username=username,
+        email=email or f"{username}@escola.local",
+        role_id=role_prof.id if role_prof else 1,
+        active=(data.get('status', 'ativo') == 'ativo'),
+        must_change_password=False
+    )
+    user.set_password(password)
+    db.session.add(user)
+    db.session.flush()
+
+    # 3. Criar professor associado
     teacher = Teacher(**data)
+    teacher.user_id = user.id
     db.session.add(teacher)
     db.session.commit()
     
-    log_action('TEACHER_CREATED', entity='teacher', entity_id=teacher.id, description=f'Criou professor ID {teacher.id}')
+    log_action('TEACHER_CREATED', entity='teacher', entity_id=teacher.id, description=f'Criou professor {teacher.full_name} com usuário {user.username}')
     return teacher
 
 def update_teacher(teacher, data):
+    username = data.pop('username', None)
+    password = data.pop('password', None)
+    data.pop('confirm_password', None)
+
     if data.get('cpf'):
         data['cpf'] = re.sub(r'[^0-9]', '', data['cpf'])
+
+    # Atualiza conta de usuário se já existir
+    if teacher.user:
+        if username and username != teacher.user.username:
+            teacher.user.username = username
+        if data.get('email'):
+            teacher.user.email = data['email']
+        if password:
+            teacher.user.set_password(password)
+        if 'status' in data:
+            teacher.user.active = (data['status'] == 'ativo')
+    elif password or username:
+        # Se for um professor legado sem usuário, cria a conta agora
+        role_prof = Role.query.filter_by(name='professor').first()
+        if not username:
+            username = _generate_teacher_username(teacher.full_name, data.get('email', teacher.email))
+        new_user = User(
+            username=username,
+            email=data.get('email', teacher.email) or f"{username}@escola.local",
+            role_id=role_prof.id if role_prof else 1,
+            active=(data.get('status', teacher.status) == 'ativo'),
+            must_change_password=False
+        )
+        new_user.set_password(password or 'professor01')
+        db.session.add(new_user)
+        db.session.flush()
+        teacher.user_id = new_user.id
 
     for key, value in data.items():
         if hasattr(teacher, key):
@@ -73,12 +159,16 @@ def update_teacher(teacher, data):
 
 def deactivate_teacher(teacher):
     teacher.status = 'inativo'
+    if teacher.user:
+        teacher.user.active = False
     db.session.commit()
     log_action('TEACHER_DEACTIVATED', entity='teacher', entity_id=teacher.id, description=f'Desativou professor ID {teacher.id}')
     return teacher
 
 def activate_teacher(teacher):
     teacher.status = 'ativo'
+    if teacher.user:
+        teacher.user.active = True
     db.session.commit()
     log_action('TEACHER_ACTIVATED', entity='teacher', entity_id=teacher.id, description=f'Ativou professor ID {teacher.id}')
     return teacher

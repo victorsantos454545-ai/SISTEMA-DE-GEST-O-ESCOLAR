@@ -108,5 +108,10 @@ class User(UserMixin, TimestampMixin, db.Model):
             return p.full_name
         return self.username
 
+    @property
+    def name(self):
+        """Alias para display_name garantindo compatibilidade."""
+        return self.display_name
+
     def __repr__(self):
         return f'<User {self.username}>'

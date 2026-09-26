@@ -26,6 +26,8 @@ def can_access_student(user, student_id):
             ct.class_id for ct in
             ClassTeacher.query.filter_by(teacher_id=user.teacher_profile.id).all()
         ]
+        if not teacher_class_ids:
+            return False
         enrolled = Enrollment.query.filter(
             Enrollment.school_class_id.in_(teacher_class_ids),
             Enrollment.student_id == student_id,
@@ -70,6 +72,8 @@ def can_access_class(user, class_id):
             sg.student_id for sg in
             StudentGuardian.query.filter_by(guardian_id=user.guardian_profile.id).all()
         ]
+        if not student_ids:
+            return False
         return Enrollment.query.filter(
             Enrollment.student_id.in_(student_ids),
             Enrollment.school_class_id == class_id,
