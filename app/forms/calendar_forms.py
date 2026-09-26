@@ -29,10 +29,10 @@ class CalendarEventForm(FlaskForm):
     subject_id = SelectField('Disciplina (Opcional)', coerce=int, validators=[Optional()])
     
     status = SelectField('Status', choices=[
-        ('draft', 'Rascunho'),
         ('published', 'Publicado'),
+        ('draft', 'Rascunho'),
         ('completed', 'Concluído'),
         ('cancelled', 'Cancelado')
-    ], validators=[DataRequired()])
+    ], default='published', validators=[DataRequired()])
     
     submit = SubmitField('Salvar Evento')

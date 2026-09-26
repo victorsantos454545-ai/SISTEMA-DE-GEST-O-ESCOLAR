@@ -2,32 +2,95 @@
 
 {% block title %}Calendário Escolar{% endblock %}
 
-{% block head %}
+{% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
 <style>
+    #calendar {
+        min-height: 650px;
+    }
     .fc-event {
         cursor: pointer;
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        transition: transform 0.1s ease;
+    }
+    .fc-event:hover {
+        transform: scale(1.02);
+    }
+    .fc-toolbar-title {
+        font-size: 1.3rem !important;
+        font-weight: 700;
+        color: #2c3e50;
+        text-transform: capitalize;
+    }
+    .fc-button-primary {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        font-weight: 500;
+    }
+    .fc-button-primary:hover {
+        background-color: #0b5ed7 !important;
+        border-color: #0a58ca !important;
+    }
+    .fc-button-active {
+        background-color: #0a58ca !important;
+        border-color: #0a58ca !important;
+    }
+    .legend-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        margin-right: 14px;
+        margin-bottom: 6px;
+        color: #495057;
+    }
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 mb-0 text-gray-800">Calendário Escolar</h2>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="h4 mb-1 text-gray-800 fw-bold">
+                <i class="bi bi-calendar3 me-2 text-primary"></i>Calendário Escolar
+            </h2>
+            <p class="text-muted small mb-0">Eventos, aulas, provas, reuniões e feriados sincronizados para toda a escola.</p>
+        </div>
         <div>
             {% if current_user.has_permission('calendar.create') %}
-            <a href="{{ url_for('calendar.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Novo Evento
+            <a href="{{ url_for('calendar.create') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Novo Evento
             </a>
             {% endif %}
         </div>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-body">
+    <!-- Legenda de Categorias -->
+    <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-body py-2 px-3">
+            <span class="fw-semibold small text-muted me-2">Categorias:</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#3788d8;"></span> Aula</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#dc3545;"></span> Prova</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#fd7e14;"></span> Avaliação</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#6f42c1;"></span> Reunião</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#20c997;"></span> Evento Escolar</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#d63384;"></span> Feriado</span>
+            <span class="legend-badge"><span class="legend-dot" style="background:#198754;"></span> Atividade</span>
+        </div>
+    </div>
+
+    <!-- Calendário Principal -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3 p-md-4">
             <div id="calendar"></div>
         </div>
     </div>
@@ -35,22 +98,47 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- FullCalendar JS e Locale PT-BR -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
+        if (!calendarEl || typeof FullCalendar === 'undefined') {
+            console.error('FullCalendar not loaded');
+            return;
+        }
+
         var calendar = new FullCalendar.Calendar(calendarEl, {
             locale: 'pt-br',
             initialView: 'dayGridMonth',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
             },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia',
+                list: 'Lista'
+            },
+            navLinks: true,
+            editable: false,
+            dayMaxEvents: true,
             events: '{{ url_for("calendar.api_events") }}',
             eventClick: function(info) {
                 if (info.event.url) {
                     window.location.href = info.event.url;
                     info.jsEvent.preventDefault();
+                }
+            },
+            loading: function(isLoading) {
+                if (isLoading) {
+                    calendarEl.style.opacity = '0.6';
+                } else {
+                    calendarEl.style.opacity = '1';
                 }
             }
         });

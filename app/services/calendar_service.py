@@ -24,8 +24,12 @@ def get_calendar_events_json(start_date, end_date, user, status_filter=None):
     
     # Base queries
     ce_query = CalendarEvent.query.filter(
-        CalendarEvent.start_datetime >= start_date,
-        CalendarEvent.start_datetime <= end_date
+        CalendarEvent.start_datetime <= end_date,
+        db.or_(
+            CalendarEvent.end_datetime >= start_date,
+            CalendarEvent.end_datetime == None,
+            CalendarEvent.start_datetime >= start_date
+        )
     )
     
     ass_query = Assessment.query.filter(
@@ -44,38 +48,74 @@ def get_calendar_events_json(start_date, end_date, user, status_filter=None):
         ass_query = ass_query.filter_by(status=status_filter)
         act_query = act_query.filter_by(status=status_filter)
     else:
-        # Padrão: esconde rascunhos para aluno/responsável
-        if user.role.name in ['aluno', 'responsavel']:
-            ce_query = ce_query.filter(CalendarEvent.status.in_(['published', 'completed', 'cancelled']))
-            ass_query = ass_query.filter(Assessment.status.in_(['publicada', 'encerrada', 'cancelada']))
-            act_query = act_query.filter(Activity.status.in_(['publicada', 'encerrada', 'cancelada']))
+        # Para professores, alunos e responsáveis: exibe todos os eventos ativos (não cancelados)
+        if user.role and user.role.name in ['aluno', 'responsavel', 'professor']:
+            ce_query = ce_query.filter(CalendarEvent.status != 'cancelled')
+            ass_query = ass_query.filter(Assessment.status != 'cancelada')
+            act_query = act_query.filter(Activity.status != 'cancelada')
             
     # 2. Filtrar o que o usuário pode ver
-    if user.role.name == 'aluno':
-        # Vê eventos gerais da escola (sem turma) + eventos da própria turma
-        class_ids = [e.school_class_id for e in Enrollment.query.filter_by(student_id=user.profile.id, status='ativa').all()]
-        ce_query = ce_query.filter(db.or_(CalendarEvent.school_class_id == None, CalendarEvent.school_class_id.in_(class_ids)))
-        ass_query = ass_query.filter(Assessment.school_class_id.in_(class_ids))
-        act_query = act_query.filter(Activity.school_class_id.in_(class_ids))
-        
-    elif user.role.name == 'responsavel':
+    role_name = user.role.name if user.role else ''
+    if role_name == 'aluno':
         class_ids = []
-        if user.profile:
-            students = [sg.student for sg in user.profile.student_links if sg.student.status == 'ativo']
+        if user.profile and hasattr(user.profile, 'id'):
+            class_ids = [e.school_class_id for e in Enrollment.query.filter(
+                Enrollment.student_id == user.profile.id,
+                Enrollment.status.in_(['ativa', 'ativo'])
+            ).all()]
+        or_clauses = [CalendarEvent.school_class_id == None]
+        if class_ids:
+            or_clauses.append(CalendarEvent.school_class_id.in_(class_ids))
+            ass_query = ass_query.filter(Assessment.school_class_id.in_(class_ids))
+            act_query = act_query.filter(Activity.school_class_id.in_(class_ids))
+        else:
+            ass_query = ass_query.filter(db.false())
+            act_query = act_query.filter(db.false())
+        ce_query = ce_query.filter(db.or_(*or_clauses))
+        
+    elif role_name == 'responsavel':
+        class_ids = []
+        if user.profile and hasattr(user.profile, 'student_links'):
+            students = [sg.student for sg in user.profile.student_links if sg.student and sg.student.status == 'ativo']
             s_ids = [s.id for s in students]
-            enrollments = Enrollment.query.filter(Enrollment.student_id.in_(s_ids), Enrollment.status == 'ativa').all()
-            class_ids = [e.school_class_id for e in enrollments]
+            if s_ids:
+                enrollments = Enrollment.query.filter(
+                    Enrollment.student_id.in_(s_ids),
+                    Enrollment.status.in_(['ativa', 'ativo'])
+                ).all()
+                class_ids = [e.school_class_id for e in enrollments]
         
-        ce_query = ce_query.filter(db.or_(CalendarEvent.school_class_id == None, CalendarEvent.school_class_id.in_(class_ids)))
-        ass_query = ass_query.filter(Assessment.school_class_id.in_(class_ids))
-        act_query = act_query.filter(Activity.school_class_id.in_(class_ids))
+        or_clauses = [CalendarEvent.school_class_id == None]
+        if class_ids:
+            or_clauses.append(CalendarEvent.school_class_id.in_(class_ids))
+            ass_query = ass_query.filter(Assessment.school_class_id.in_(class_ids))
+            act_query = act_query.filter(Activity.school_class_id.in_(class_ids))
+        else:
+            ass_query = ass_query.filter(db.false())
+            act_query = act_query.filter(db.false())
+        ce_query = ce_query.filter(db.or_(*or_clauses))
         
-    elif user.role.name == 'professor':
-        # Vê geral e das turmas que leciona
-        class_ids = [link.school_class_id for link in user.profile.subject_links] if user.profile else []
-        ce_query = ce_query.filter(db.or_(CalendarEvent.school_class_id == None, CalendarEvent.school_class_id.in_(class_ids)))
-        ass_query = ass_query.filter(Assessment.school_class_id.in_(class_ids))
-        act_query = act_query.filter(Activity.school_class_id.in_(class_ids))
+    elif role_name == 'professor':
+        # Professor vê eventos gerais, eventos criados por ele e eventos das turmas que leciona
+        class_ids = []
+        if user.profile and hasattr(user.profile, 'class_links'):
+            class_ids = [ct.class_id for ct in user.profile.class_links]
+            
+        or_clauses = [CalendarEvent.school_class_id == None, CalendarEvent.created_by == user.id]
+        if class_ids:
+            or_clauses.append(CalendarEvent.school_class_id.in_(class_ids))
+            teacher_id = user.profile.id if user.profile else None
+            ass_query = ass_query.filter(db.or_(Assessment.school_class_id.in_(class_ids), Assessment.teacher_id == teacher_id))
+            act_query = act_query.filter(db.or_(Activity.school_class_id.in_(class_ids), Activity.teacher_id == teacher_id))
+        else:
+            teacher_id = user.profile.id if user.profile else None
+            if teacher_id:
+                ass_query = ass_query.filter(Assessment.teacher_id == teacher_id)
+                act_query = act_query.filter(Activity.teacher_id == teacher_id)
+            else:
+                ass_query = ass_query.filter(db.false())
+                act_query = act_query.filter(db.false())
+        ce_query = ce_query.filter(db.or_(*or_clauses))
         
     # Adicionar CalendarEvents manuais
     for ce in ce_query.all():

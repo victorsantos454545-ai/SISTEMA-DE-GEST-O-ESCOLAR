@@ -67,6 +67,11 @@ Thumbs.db
 *.key
 *.crt
 
+# Node
+node_modules/
+package-lock.json
+package.json
+
 # Cache
 .cache/
 migrations/versions/__pycache__/

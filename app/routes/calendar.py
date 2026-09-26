@@ -49,8 +49,8 @@ def create():
         
         try:
             ce = create_calendar_event(data, current_user.id)
-            flash('Evento criado com sucesso.', 'success')
-            return redirect(url_for('calendar.detail', id=ce.id))
+            flash('Evento salvo e adicionado ao calendário com sucesso!', 'success')
+            return redirect(url_for('calendar.index'))
         except ValueError as e:
             flash(str(e), 'danger')
             
@@ -84,7 +84,7 @@ def edit(id):
         try:
             update_calendar_event(id, data, current_user.id)
             flash('Evento atualizado com sucesso.', 'success')
-            return redirect(url_for('calendar.detail', id=id))
+            return redirect(url_for('calendar.index'))
         except ValueError as e:
             flash(str(e), 'danger')
             
