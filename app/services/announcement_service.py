@@ -70,20 +70,26 @@ def get_visible_announcements(user, limit=None):
         (Announcement.expires_at == None) | (Announcement.expires_at > now)
     )
     
-    # Filter by recipients
-    query = query.join(AnnouncementRecipient).filter(
-        or_(
-            AnnouncementRecipient.target_type.in_(target_types),
-            and_(AnnouncementRecipient.target_type == 'turma', AnnouncementRecipient.target_id.in_(target_ids))
-        )
-    )
-    
     # Admin and secretaria can see all
     if user.role and user.role.name in ['admin', 'secretaria']:
         query = Announcement.query.filter(
             Announcement.status == 'publicado',
             (Announcement.published_at <= now) | (Announcement.published_at == None),
             (Announcement.expires_at == None) | (Announcement.expires_at > now)
+        )
+    else:
+        # Filter by recipients using subquery to avoid duplicate rows and avoid DISTINCT with ORDER BY on PostgreSQL
+        recipient_subquery = db.session.query(AnnouncementRecipient.announcement_id).filter(
+            or_(
+                AnnouncementRecipient.target_type.in_(target_types),
+                and_(AnnouncementRecipient.target_type == 'turma', AnnouncementRecipient.target_id.in_(target_ids))
+            )
+        )
+        query = Announcement.query.filter(
+            Announcement.status == 'publicado',
+            (Announcement.published_at <= now) | (Announcement.published_at == None),
+            (Announcement.expires_at == None) | (Announcement.expires_at > now),
+            Announcement.id.in_(recipient_subquery)
         )
         
     query = query.order_by(
@@ -93,7 +99,7 @@ def get_visible_announcements(user, limit=None):
             else_=3
         ),
         Announcement.published_at.desc()
-    ).distinct()
+    )
     
     if limit:
         return query.limit(limit).all()
