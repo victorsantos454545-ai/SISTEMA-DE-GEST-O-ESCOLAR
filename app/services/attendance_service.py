@@ -17,6 +17,10 @@ def process_attendance_batch(teacher_id, school_class_id, subject_id, date, peri
     Processa chamada em lote.
     attendance_data: dict { student_id: {'status': 'presente'|'ausente'|'justificado', 'justification': '...'} }
     """
+    if isinstance(date, str):
+        from datetime import datetime
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+
     processed = 0
     
     # Obtem matriculas validas para esta turma

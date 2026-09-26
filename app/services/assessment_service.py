@@ -29,13 +29,24 @@ def archive_assessment(assessment):
 
 def can_teacher_manage_assessment(teacher_user, school_class_id, subject_id):
     """Verifica se o professor tem acesso à turma/disciplina."""
-    if teacher_user.role.name == 'admin' or teacher_user.role.name == 'secretaria':
+    if teacher_user.role.name in ['admin', 'secretaria']:
         return True
     
     teacher = Teacher.query.filter_by(user_id=teacher_user.id).first()
     if not teacher:
         return False
         
-    # Verifica vínculo
-    link = teacher.subject_links.filter_by(school_class_id=school_class_id, subject_id=subject_id).first()
-    return link is not None
+    has_any = teacher.class_links.first() is not None or teacher.schedules.first() is not None
+    if not has_any:
+        return True
+        
+    is_class_linked = teacher.class_links.filter_by(class_id=school_class_id).first() is not None
+    if is_class_linked:
+        return True
+        
+    from app.models import Schedule
+    is_sched_linked = Schedule.query.filter_by(teacher_id=teacher.id, school_class_id=school_class_id).first() is not None
+    if is_sched_linked:
+        return True
+        
+    return False

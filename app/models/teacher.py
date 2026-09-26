@@ -45,5 +45,10 @@ class Teacher(TimestampMixin, db.Model):
     schedules = db.relationship('Schedule', back_populates='teacher', lazy='dynamic')
     attendances = db.relationship('Attendance', back_populates='teacher', lazy='dynamic')
 
+    @property
+    def name(self):
+        """Retorna o nome completo do professor."""
+        return self.full_name
+
     def __repr__(self):
         return f'<Teacher {self.full_name}>'

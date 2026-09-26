@@ -28,15 +28,34 @@ def index():
         if not teacher:
             abort(403)
             
+        teacher_class_ids = {ct.class_id for ct in teacher.class_links}
+        for s in teacher.schedules:
+            teacher_class_ids.add(s.school_class_id)
+            
+        teacher_classes = [c for c in classes if c.id in teacher_class_ids]
+        if teacher_classes:
+            form.school_class_id.choices = [(c.id, c.name) for c in teacher_classes]
+            
+        teacher_subjects = teacher.subjects.all()
+        if teacher_subjects:
+            form.subject_id.choices = [(s.id, s.name) for s in teacher_subjects]
+            
     if form.validate_on_submit():
         # Validar professor leciona
         if teacher:
-            link = teacher.subject_links.filter_by(
+            from app.models import ClassTeacher, Schedule
+            has_class_link = ClassTeacher.query.filter_by(
+                class_id=form.school_class_id.data,
+                teacher_id=teacher.id
+            ).first() is not None
+            has_sched_link = Schedule.query.filter_by(
                 school_class_id=form.school_class_id.data,
-                subject_id=form.subject_id.data
-            ).first()
-            if not link:
-                flash('Você não tem permissão para lançar chamada nesta turma/disciplina.', 'danger')
+                teacher_id=teacher.id
+            ).first() is not None
+            
+            has_any_link = teacher.class_links.first() is not None or teacher.schedules.first() is not None
+            if has_any_link and not (has_class_link or has_sched_link):
+                flash('Você não tem permissão para lançar chamada nesta turma.', 'danger')
                 return redirect(url_for('attendance.index'))
                 
         return redirect(url_for('attendance.call', 
@@ -67,10 +86,19 @@ def call():
         if not teacher: abort(403)
         teacher_id = teacher.id
     else:
-        # Se for admin/secretaria, pegar professor vinculado
-        link = school_class.subject_links.filter_by(subject_id=subject.id).first()
-        if link:
-            teacher_id = link.teacher_id
+        # Se for admin/secretaria, pegar professor vinculado à turma ou horário
+        from app.models import ClassTeacher, Schedule
+        ct = ClassTeacher.query.filter_by(class_id=class_id).first()
+        if ct:
+            teacher_id = ct.teacher_id
+        else:
+            sched = Schedule.query.filter_by(school_class_id=class_id, subject_id=subject.id).first()
+            if sched:
+                teacher_id = sched.teacher_id
+            else:
+                first_t = Teacher.query.filter_by(status='ativo').first()
+                if first_t:
+                    teacher_id = first_t.id
             
     form = AttendanceBatchForm()
     
@@ -78,7 +106,13 @@ def call():
     enrollments = Enrollment.query.filter_by(school_class_id=class_id, status='ativa').all()
     
     # Busca registros existentes
-    existing = Attendance.query.filter_by(school_class_id=class_id, subject_id=subject_id, date=date_str).all()
+    try:
+        from datetime import datetime
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        date_obj = date_str
+
+    existing = Attendance.query.filter_by(school_class_id=class_id, subject_id=subject_id, date=date_obj).all()
     existing_dict = {a.student_id: a for a in existing}
     
     if form.validate_on_submit():
@@ -92,13 +126,12 @@ def call():
             if status:
                 attendance_data[sid] = {'status': status, 'justification': justif}
                 
-        if teacher_id:
-            success, result = process_attendance_batch(teacher_id, class_id, subject_id, date_str, period, attendance_data)
-            if success:
-                flash(f'Chamada registrada com sucesso! ({result} alunos)', 'success')
-                return redirect(url_for('attendance.index'))
+        success, result = process_attendance_batch(teacher_id, class_id, subject_id, date_str, period, attendance_data)
+        if success:
+            flash(f'Chamada registrada com sucesso! ({result} alunos)', 'success')
+            return redirect(url_for('attendance.index'))
         else:
-            flash('Nenhum professor vinculado para assumir o registro.', 'danger')
+            flash(f'Erro ao registrar chamada: {result}', 'danger')
             
     return render_template('attendance/call.html', 
                           form=form, 

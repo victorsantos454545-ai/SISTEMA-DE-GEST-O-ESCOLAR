@@ -16,9 +16,16 @@ def _fill_activity_choices(form, user, current_teacher_id=None):
         if not teacher:
             return False
             
-        links = teacher.subject_links.all()
-        classes = {link.school_class for link in links if link.school_class.status == 'ativa'}
-        subjects = {link.subject for link in links}
+        classes = [link.school_class for link in teacher.class_links if link.school_class.status == 'ativa']
+        if not classes:
+            from app.models import Schedule
+            classes = [s.school_class for s in teacher.schedules if s.school_class and s.school_class.status == 'ativa']
+        if not classes:
+            classes = SchoolClass.query.filter_by(status='ativa').all()
+            
+        subjects = teacher.subjects.all()
+        if not subjects:
+            subjects = Subject.query.all()
         
         form.school_class_id.choices = [(c.id, c.name) for c in classes]
         form.subject_id.choices = [(s.id, s.name) for s in subjects]

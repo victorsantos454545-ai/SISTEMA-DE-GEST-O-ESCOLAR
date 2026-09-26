@@ -48,5 +48,10 @@ class Student(TimestampMixin, db.Model):
         """Retorna a lista de responsáveis vinculados ao aluno."""
         return [link.guardian for link in self.guardian_links]
 
+    @property
+    def name(self):
+        """Retorna o nome do aluno (social_name se houver, ou full_name)."""
+        return self.social_name if self.social_name else self.full_name
+
     def __repr__(self):
         return f'<Student {self.full_name}>'

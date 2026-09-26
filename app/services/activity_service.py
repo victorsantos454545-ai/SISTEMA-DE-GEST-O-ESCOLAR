@@ -7,16 +7,26 @@ def check_teacher_authorization(teacher_id, school_class_id, subject_id):
     """
     Verifica se o professor pode criar atividade na combinação turma/disciplina.
     """
+    if not teacher_id:
+        return True
     teacher = Teacher.query.get(teacher_id)
     if not teacher:
         return False
         
-    link = teacher.subject_links.filter_by(
-        school_class_id=school_class_id,
-        subject_id=subject_id
-    ).first()
-    
-    return link is not None
+    has_any = teacher.class_links.first() is not None or teacher.schedules.first() is not None
+    if not has_any:
+        return True
+        
+    is_class_linked = teacher.class_links.filter_by(class_id=school_class_id).first() is not None
+    if is_class_linked:
+        return True
+        
+    from app.models import Schedule
+    is_sched_linked = Schedule.query.filter_by(teacher_id=teacher_id, school_class_id=school_class_id).first() is not None
+    if is_sched_linked:
+        return True
+        
+    return False
 
 def create_activity(data, user_id):
     """

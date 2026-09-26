@@ -38,5 +38,10 @@ class Guardian(TimestampMixin, db.Model):
         """Retorna a lista de alunos vinculados a este responsável."""
         return [link.student for link in self.student_links]
 
+    @property
+    def name(self):
+        """Retorna o nome do responsável."""
+        return self.full_name
+
     def __repr__(self):
         return f'<Guardian {self.full_name}>'
