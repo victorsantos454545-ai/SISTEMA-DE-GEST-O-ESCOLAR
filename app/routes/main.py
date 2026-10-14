@@ -14,11 +14,19 @@ from app.extensions import db
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
+@main_bp.route('/home')
+@main_bp.route('/painel')
 def index():
     """Redireciona para o dashboard se autenticado, senao para login."""
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     return redirect(url_for('auth.login'))
+
+@main_bp.route('/perfil')
+@login_required
+def redirect_profile():
+    """Redireciona /perfil para a tela de perfil do usuario."""
+    return redirect(url_for('users.profile'))
 
 @main_bp.route('/dashboard')
 @login_required

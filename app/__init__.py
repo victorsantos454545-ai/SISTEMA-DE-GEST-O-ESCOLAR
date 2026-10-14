@@ -8,6 +8,7 @@ def create_app(config_name='development'):
     """Application Factory: cria e configura a aplicação Flask."""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    app.url_map.strict_slashes = False
 
     # Inicializar extensões
     db.init_app(app)

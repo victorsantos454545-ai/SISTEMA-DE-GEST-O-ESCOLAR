@@ -88,19 +88,19 @@ def my_schedule():
     if current_user.role.name == 'aluno':
         if not current_user.profile:
             flash("Perfil de aluno não encontrado.", "warning")
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('main.dashboard'))
             
         enrollment = current_user.profile.enrollments.filter_by(status='ativa').first()
         if not enrollment:
             flash("Você não possui matrícula ativa em uma turma.", "warning")
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('main.dashboard'))
             
         return redirect(url_for('schedules.class_schedule', class_id=enrollment.school_class_id))
         
     elif current_user.role.name == 'professor':
         if not current_user.profile:
             flash("Perfil de professor não encontrado.", "warning")
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('main.dashboard'))
             
         # Para professor, criamos uma view especial
         schedules = Schedule.query.filter_by(teacher_id=current_user.profile.id).order_by(Schedule.start_time).all()
@@ -117,4 +117,4 @@ def my_schedule():
                                days=Schedule.DAYS)
                                
     flash("Esta visualização é para alunos e professores.", "info")
-    return redirect(url_for('dashboard.index'))
+    return redirect(url_for('main.dashboard'))
