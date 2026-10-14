@@ -41,6 +41,11 @@ def login():
 
         next_page = request.args.get('next')
         if next_page and _is_safe_url(next_page):
+            # Se for professor e next_page for restrito a administradores, redireciona seguro para o dashboard
+            if user.role.name == 'professor':
+                admin_prefixes = ('/usuarios', '/configuracoes', '/professores/novo', '/funcionarios')
+                if any(next_page.startswith(p) for p in admin_prefixes) or next_page in ('/professores', '/professores/'):
+                    return redirect(url_for(get_dashboard_redirect(user)))
             return redirect(next_page)
 
         return redirect(url_for(get_dashboard_redirect(user)))
