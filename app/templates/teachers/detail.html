@@ -196,7 +196,7 @@
                                 <div class="bg-white p-3 rounded border small font-monospace text-dark" id="teacherAccessMessage">
 Olá {{ teacher.full_name }}! Seu acesso ao Sistema Escolar foi liberado.
 
-🔗 Link de Acesso: {{ request.url_root }}login
+🔗 Link de Acesso: https://{{ request.host }}/login
 👤 Usuário: {{ teacher.user.username }}
 🔑 Senha: (a senha que você definiu no cadastro)
                                 </div>
