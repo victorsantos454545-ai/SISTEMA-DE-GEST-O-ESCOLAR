@@ -62,7 +62,7 @@ class ProductionConfig(Config):
         _db_url = _db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
     elif _db_url and _db_url.startswith('postgresql://'):
         _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
-    SQLALCHEMY_DATABASE_URI = _db_url
+    SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:////tmp/school_prod.db'
     # Em produção com HTTPS, habilitar cookie seguro
     SESSION_COOKIE_SECURE = True
 
