@@ -57,7 +57,7 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     """Configuração de produção."""
-    _db_url = os.environ.get('DATABASE_URL')
+    _db_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL') or os.environ.get('POSTGRES_PRISMA_URL')
     if _db_url and _db_url.startswith('postgres://'):
         _db_url = _db_url.replace('postgres://', 'postgresql+psycopg2://', 1)
     elif _db_url and _db_url.startswith('postgresql://'):
