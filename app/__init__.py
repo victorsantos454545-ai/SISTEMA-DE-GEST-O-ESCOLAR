@@ -40,7 +40,10 @@ def create_app(config_name='development'):
     _register_cli_commands(app)
 
     # Criar diretório instance se não existir
-    os.makedirs(app.instance_path, exist_ok=True)
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except OSError:
+        pass
 
     # Context processor para variáveis globais nos templates
     @app.context_processor
